@@ -14,6 +14,6 @@ using BallSim
     include("unit/test_io.jl")
 
     # 2. Physics & Regression (Existing)
-    # include("physics/test_physics.jl") 
+    include("physics/test_physics.jl") 
     # include("regression/test_regression.jl")
 end
