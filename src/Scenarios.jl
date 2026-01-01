@@ -3,6 +3,7 @@ module Scenarios
 using ..Common
 using StaticArrays
 using LinearAlgebra
+using ..Physics
 
 # ==============================================================================
 # 1. INTERFACE IMPLEMENTATION
@@ -17,6 +18,11 @@ end
 # Default fallback: Zero gravity if the scenario doesn't specify
 function Common.get_force_field(scen::Common.AbstractScenario{D}) where D
     return (p, v, t) -> zero(SVector{D, Float32})
+end
+
+function Common.get_default_solver(scen::SpiralScenario)
+    # 2ms step, 1.0 restitution (bouncy), 8 sub-steps for precision
+    return Physics.CCDSolver(0.002f0, 1.0f0, 8)
 end
 
 # ==============================================================================

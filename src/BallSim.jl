@@ -57,10 +57,9 @@ function run_simulation(scen::Common.AbstractScenario{D}, mode::OutputMode; dura
     sys = Common.setup_system(scen)
     
     # Physics Config
-    gravity = Common.get_force_field(scen) # Get gravity from the scenario
-    
-    boundary = Shapes.Circle(1.0f0) 
-    solver = Physics.CCDSolver(0.002f0, 1.0f0, 8) 
+    gravity = Common.get_force_field(scen)
+    solver = Common.get_default_solver(scen)
+    boundary = Shapes.Circle(1.0f0)
 
     println("   Particles: $(length(sys.data.pos))")
     println("   Mode:      $(typeof(mode))")

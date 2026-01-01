@@ -21,6 +21,13 @@ Returns a function `(p, v, t) -> force_vector` defining the external forces.
 """
 function get_force_field end
 
+"""
+    get_default_solver(scenario) -> AbstractSolver
+
+Returns the recommended solver configuration (dt, steps) for this scenario.
+"""
+function get_default_solver end
+
 # ==============================================================================
 # 2. CORE DATA STRUCTURES
 # ==============================================================================
