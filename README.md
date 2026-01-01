@@ -2,7 +2,10 @@
 
 **Status:** Freshly Vibed Trash | **Core:** Julia 1.10+ | **Rendering:** Makie
 
-TaSim is some vibecoded shit built in Julia. It pretends to look at **energy conservation**, **continuous collision detection (CCD)**. It is "designed" to simulate large particle counts ($N > 100k$) with sub-millimeter precision, with plots to look more closely at errors like "tunneling" or "energy drift" resulting from numerical inaccuracy.
+BallSim is some vibecoded shit built in Julia. It pretends to look at **energy conservation**, **continuous collision detection (CCD)**. 
+It is "designed" to simulate large particle counts ($N > 100k$) with sub-millimeter precision, with plots to look more closely at errors like "tunneling" or "energy drift" resulting from numerical inaccuracy.
+
+<img width="1562" height="1514" alt="image" src="https://github.com/user-attachments/assets/335fab92-36f8-40ad-9b98-db4e8cda0d6d" />
 
 ## Quick Start
 
