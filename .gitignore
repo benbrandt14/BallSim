@@ -29,3 +29,4 @@ JuliaLocalPreferences.toml
 
 # Other stuff
 sandbox/*
+.vscode/*
