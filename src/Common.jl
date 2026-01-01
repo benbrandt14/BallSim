@@ -13,6 +13,14 @@ abstract type AbstractSolver end
 
 function setup_system end
 
+# Interface for defining forces
+"""
+    get_force_field(scenario) -> Function
+
+Returns a function `(p, v, t) -> force_vector` defining the external forces.
+"""
+function get_force_field end
+
 # ==============================================================================
 # 2. CORE DATA STRUCTURES
 # ==============================================================================

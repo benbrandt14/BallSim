@@ -52,12 +52,13 @@ ExportMode(file; interval=1) = ExportMode(file, interval)
 # ==============================================================================
 
 function run_simulation(scen::Common.AbstractScenario{D}, mode::OutputMode; duration=10.0) where D
-    println("🚀 Initializing System ($(typeof(scen)))...")
+    println("Initializing System ($(typeof(scen)))...")
     
     sys = Common.setup_system(scen)
     
     # Physics Config
-    gravity = (p, v, t) -> SVector(0f0, 0f0) 
+    gravity = Common.get_force_field(scen) # Get gravity from the scenario
+    
     boundary = Shapes.Circle(1.0f0) 
     solver = Physics.CCDSolver(0.002f0, 1.0f0, 8) 
 
