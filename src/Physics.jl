@@ -22,7 +22,6 @@ end
     step!(sys, solver, boundary, gravity_func)
 
 The main physics loop. 
-Refactored to handle the new BallSystem{D, T} signature.
 """
 function step!(
     sys::Common.BallSystem{D, T}, 
@@ -33,11 +32,13 @@ function step!(
     
     dt_sub = solver.dt / solver.substeps
     
+    # Pre-calculate epsilon for projection to avoid scientific notation types
+    epsilon = 0.00001f0 
+    
     # Iterate Substeps
     for _ in 1:solver.substeps
         
         # Parallel Loop over Structure of Arrays
-        # Note: We use 1:length because SOA length is efficient
         Threads.@threads for i in 1:length(sys.data.pos)
             if sys.data.active[i]
                 p = sys.data.pos[i]
@@ -55,13 +56,15 @@ function step!(
                     # Collision Response
                     n = Common.normal(boundary, p_new, sys.t)
                     
-                    # Project back to surface
-                    p_new = p_new - n * (dist + 1e-5f0)
+                    # Project back to surface (Fixing potential 'f0' typo here)
+                    p_new = p_new - n * (dist + epsilon)
                     
                     # Reflect velocity
                     v_normal = dot(v_new, n)
                     if v_normal > 0
-                        v_new = v_new - (1 + solver.restitution) * v_normal * n
+                        # r = 1 + restitution
+                        r = 1.0f0 + solver.restitution
+                        v_new = v_new - r * v_normal * n
                     end
                 end
                 
