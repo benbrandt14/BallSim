@@ -10,7 +10,6 @@ TaSim is some vibecoded shit built in Julia. It pretends to look at **energy con
 Initialize the local environment and register the package in development mode.
 
 ```bash
-# From the project root
 julia --project=. -e 'using Pkg; Pkg.instantiate(); Pkg.develop(path=".")'
 
 ```
@@ -26,6 +25,7 @@ We provide a convenience script `sim.jl` in the root directory.
 
 # Run with custom settings
 ./sim.jl --duration 10 --fps 30 --out my_video.mp4
+```
 
 | Argument | Description | Default |
 | --- | --- | --- |
@@ -33,7 +33,7 @@ We provide a convenience script `sim.jl` in the root directory.
 | `--fps` | Framerate of the output video | `60` |
 | `--out` | Output file path | `sandbox/sim_TIMESTAMP.mp4` |
 
-### 3. Interactive Diagnostics (The "Lab")
+### 3. Interactive Debugging
 
 Opens a graphical dashboard to visually profile solver accuracy, wall penetration, and energy distribution.
 
@@ -122,10 +122,6 @@ UPDATE_REGRESSION=1 julia --project=. test/runtests.jl
 3. Add the new solver to the dictionary in `test/test_benchmarks.jl`.
 4. Run `experiments/diagnostics.jl` and select your new solver to profile it visually.
 
-```
-
-```
-
 ```bash
 julia --project=. test/runtests.jl
 
@@ -199,5 +195,3 @@ UPDATE_REGRESSION=1 julia --project=. test/runtests.jl
 2. Implement `Physics.step!`.
 3. Add the new solver to the dictionary in `test/test_benchmarks.jl`.
 4. Run `experiments/diagnostics.jl` and select your new solver to profile it visually.
-
-```
