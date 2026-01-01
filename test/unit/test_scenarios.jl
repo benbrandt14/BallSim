@@ -2,6 +2,7 @@ using Test
 using BallSim.Common
 using BallSim.Scenarios
 using StaticArrays
+using LinearAlgebra
 
 # Enforce the Factory Pattern. A Scenario is just data; setup_system does the work.
 

@@ -5,6 +5,7 @@ using LinearAlgebra
 using Printf
 using Dates
 using CairoMakie
+using GLMakie
 using ProgressMeter
 
 # ==============================================================================
@@ -15,6 +16,7 @@ include("Common.jl")
 include("Scenarios.jl") # <--- Added this
 include("Shapes.jl")
 include("Physics.jl")
+include("SimIO.jl")
 include("Vis.jl")
 
 export Common, Scenarios, Shapes, Physics, Vis
