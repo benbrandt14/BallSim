@@ -31,9 +31,9 @@ struct SpiralScenario <: Common.AbstractScenario{2}
 end
 SpiralScenario(; N=1000) = SpiralScenario(N)
 
-# --- Spiral Implementation (MUST COME AFTER STRUCT) ---
+# --- Spiral Implementation ---
 
-function initialize!(sys::Common.BallSystem{2}, scen::SpiralScenario)
+function initialize!(sys::Common.BallSystem{2, T, S}, scen::SpiralScenario) where {T, S}
     spread = 0.05f0
     
     Threads.@threads for i in 1:scen.N

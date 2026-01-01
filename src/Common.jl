@@ -12,32 +12,23 @@ abstract type AbstractBoundary{D} end
 abstract type AbstractSolver end
 
 function setup_system end
-
-# Interface for defining forces
-"""
-    get_force_field(scenario) -> Function
-
-Returns a function `(p, v, t) -> force_vector` defining the external forces.
-"""
 function get_force_field end
-
-"""
-    get_default_solver(scenario) -> AbstractSolver
-
-Returns the recommended solver configuration (dt, steps) for this scenario.
-"""
 function get_default_solver end
 
 # ==============================================================================
 # 2. CORE DATA STRUCTURES
 # ==============================================================================
 
-mutable struct BallSystem{D, T}
-    # Main State: StructArray of NamedTuples
-    data::StructArray{
-        NamedTuple{(:pos, :vel, :active), 
-        Tuple{SVector{D, T}, SVector{D, T}, Bool}}
-    }
+"""
+    BallSystem{D, T, S}
+
+Physical state.
+- D: Dimensions (2, 3)
+- T: Precision (Float32, Float64)
+- S: Storage Type (StructArray{...}) <--- NEW PARAMETER
+"""
+mutable struct BallSystem{D, T, S}
+    data::S
     t::T
     iter::Int
 
@@ -48,15 +39,15 @@ mutable struct BallSystem{D, T}
         active = zeros(Bool, N)
 
         # Bind to StructArray
-        # Note: We do NOT wrap pos/vel in their own StructArrays here.
-        # This keeps the types simple: Array{SVector}.
         data = StructArray((pos=pos, vel=vel, active=active))
         
-        new{D, T}(data, zero(T), 0)
+        # We let the compiler infer the complex type 'S' from 'data'
+        S = typeof(data)
+        new{D, T, S}(data, zero(T), 0)
     end
 end
 
-function Base.show(io::IO, sys::BallSystem{D, T}) where {D, T}
+function Base.show(io::IO, sys::BallSystem{D, T, S}) where {D, T, S}
     N_active = count(sys.data.active)
     print(io, "BallSystem{$D, $T}(N=$(length(sys.data.pos)), Active=$N_active, t=$(sys.t))")
 end

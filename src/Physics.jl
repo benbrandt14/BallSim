@@ -24,11 +24,11 @@ end
 The main physics loop. 
 """
 function step!(
-    sys::Common.BallSystem{D, T}, 
+    sys::Common.BallSystem{D, T, S},
     solver::CCDSolver, 
     boundary::Common.AbstractBoundary{D}, 
     gravity_func::Function
-) where {D, T}
+) where {D, T, S}
     
     dt_sub = solver.dt / solver.substeps
     

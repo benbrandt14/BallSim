@@ -3,7 +3,7 @@ module Vis
 using ..Common
 using StaticArrays
 
-function compute_density!(grid::Matrix{Float32}, sys::Common.BallSystem{2, T}, limit::Float64) where T
+function compute_density!(grid::Matrix{Float32}, sys::Common.BallSystem{2, T, S}, limit::Float64) where {T, S}
     fill!(grid, 0.0f0)
     res_x, res_y = size(grid)
     
