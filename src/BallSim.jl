@@ -13,9 +13,9 @@ using HDF5
 
 # Sub-modules
 include("Common.jl")
-include("Scenarios.jl")
 include("Shapes.jl")
 include("Physics.jl")
+include("Scenarios.jl")
 include("SimIO.jl")
 include("Vis.jl")
 
@@ -59,8 +59,10 @@ function run_simulation(scen::Common.AbstractScenario{D}, mode::OutputMode; dura
     # Physics Config
     gravity = Common.get_force_field(scen)
     solver = Common.get_default_solver(scen)
-    boundary = Shapes.Circle(1.0f0)
-
+    
+    # We still use a default boundary here, but ideally this moves to Scenario too
+    boundary = Shapes.Circle(1.0f0) 
+    
     println("   Particles: $(length(sys.data.pos))")
     println("   Mode:      $(typeof(mode))")
 
@@ -118,7 +120,6 @@ function _run_loop(sys, mode::InteractiveMode, solver, boundary, gravity, durati
         end
         
         # D. Yield to UI
-        # If simulation is heavy, we need to yield explicitly to let GLMakie draw
         sleep(0.001) 
     end
 end
@@ -126,12 +127,10 @@ end
 # --- Loop B: Export (The Archive) ---
 function _run_loop(sys, mode::ExportMode, solver, boundary, gravity, duration)
     h5open(mode.outfile, "w") do file
-        # FIX: Explicitly use HDF5.attributes to avoid Makie collision
         HDF5.attributes(file)["scenario"] = string(typeof(sys))
         HDF5.attributes(file)["dt"] = solver.dt
         
         total_steps = ceil(Int, duration / solver.dt)
-        # Progress bar based on TIME, not raw steps, for clarity
         prog = Progress(total_steps, desc="Exporting HDF5: ", color=:blue)
         
         frame_idx = 1
@@ -168,7 +167,6 @@ function _run_loop(sys, mode::RenderMode, solver, boundary, gravity, duration)
     
     println("🎥 Rendering $(total_frames) frames to $(mode.outfile)...")
     
-    # FIX: Added Progress Bar
     prog = Progress(total_frames, desc="Rendering Video: ", color=:magenta)
     
     record(fig, mode.outfile, 1:total_frames; framerate=mode.fps) do frame
@@ -183,10 +181,6 @@ function _run_loop(sys, mode::RenderMode, solver, boundary, gravity, duration)
     end
     println("\n✅ Video saved.")
 end
-
-# ==============================================================================
-# 3. CLI ENTRY POINT
-# ==============================================================================
 
 function command_line_main()
     args = ARGS
@@ -207,7 +201,6 @@ function command_line_main()
     scenario = Scenarios.SpiralScenario(N=N)
     
     if mode_str == "interactive"
-        # Reduce default resolution for smoother UI
         mode = InteractiveMode(res=800)
     elseif mode_str == "export"
         mkpath("sandbox")
