@@ -12,11 +12,12 @@ using ProgressMeter
 # ==============================================================================
 
 include("Common.jl")
+include("Scenarios.jl") # <--- Added this
 include("Shapes.jl")
 include("Physics.jl")
 include("Vis.jl")
 
-export Common, Shapes, Physics, Vis
+export Common, Scenarios, Shapes, Physics, Vis
 
 # ==============================================================================
 # 2. DEMO RUNNER

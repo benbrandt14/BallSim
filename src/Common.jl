@@ -2,52 +2,74 @@ module Common
 
 using StaticArrays
 using StructArrays
-using LinearAlgebra
 
-# --- Types ---
-abstract type AbstractBoundary end
+# ==============================================================================
+# 1. ABSTRACT INTERFACES
+# ==============================================================================
+
+"""
+    AbstractScenario{D}
+
+The recipe for a simulation in D dimensions.
+"""
+abstract type AbstractScenario{D} end
+
+"""
+    AbstractBoundary{D}
+
+A geometric constraint in D dimensions.
+"""
+abstract type AbstractBoundary{D} end
+
 abstract type AbstractSolver end
 
-# Parametric Particle: Agnostic to Dimension (D) and Precision (T)
-struct Particle{D,T}
-    pos::SVector{D,T}
-    vel::SVector{D,T}
-    active::Bool
-end
+# ==============================================================================
+# 2. CORE DATA STRUCTURES
+# ==============================================================================
 
-# The System wrapper
-mutable struct BallSystem{D,T}
-    data::StructArray{Particle{D,T}}
+"""
+    BallSystem{D, T}
+
+The physical state of N particles in D dimensions with precision T.
+Uses StructArrays for SOA (Structure of Arrays) memory layout.
+"""
+mutable struct BallSystem{D, T}
+    # We map the concept of a "Particle" to a collection of arrays
+    data::StructArray{
+        NamedTuple{(:pos, :vel, :active), 
+        Tuple{SVector{D, T}, SVector{D, T}, Bool}}
+    }
     t::T
-end
+    iter::Int
 
-function BallSystem(n::Int, D::Int=2, T::Type=Float32)
-    # Init with zeros/false
-    s = StructArray{Particle{D,T}}(undef, n)
-    fill!(s.active, false)
-    return BallSystem(s, T(0))
-end
+    function BallSystem(N::Int, D::Int, T::Type=Float32)
+        # 1. Create Raw Columns
+        # We explicitly create columns to ensure they are contiguous
+        pos = zeros(SVector{D, T}, N)
+        vel = zeros(SVector{D, T}, N)
+        active = zeros(Bool, N)
 
-# --- Interface Definitions ---
-const Gravity2D = (p, v, t) -> SVector(0.0f0, -9.81f0)
-
-function sdf(b::AbstractBoundary, p, t)
-    error("Not Implemented")
-end
-
-function normal(b::AbstractBoundary, p, t)
-    # Finite Difference fallback
-    d = sdf(b, p, t)
-
-    # Use valid Float32 scientific notation (1f-4)
-    ϵ = 1.0f-4
-
-    grad = p .* 0
-    for i in 1:length(p)
-        p_shifted = setindex(p, p[i] + ϵ, i)
-        grad = setindex(grad, sdf(b, p_shifted, t) - d, i)
+        # 2. Bind into StructArray
+        # This allows sys.data.pos[i] (convenience) AND sys.data.pos.x (fast access)
+        data = StructArray((pos=pos, vel=vel, active=active))
+        
+        new{D, T}(data, zero(T), 0)
     end
-    return normalize(grad)
+end
+
+# Helper to expose interfaces cleanly
+function Base.show(io::IO, sys::BallSystem{D, T}) where {D, T}
+    N_active = count(sys.data.active)
+    print(io, "BallSystem{$D, $T}(N=$(length(sys.data.pos)), Active=$N_active, t=$(sys.t))")
+end
+
+# Required interfaces for Boundaries
+function sdf(b::AbstractBoundary{D}, p::SVector{D}, t) where D
+    error("SDF not implemented for $(typeof(b))")
+end
+
+function normal(b::AbstractBoundary{D}, p::SVector{D}, t) where D
+    error("Normal not implemented for $(typeof(b))")
 end
 
 end
