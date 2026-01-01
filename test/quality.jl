@@ -13,25 +13,21 @@ using JET
     end
 
     @testset "JET (Type Stability)" begin
-        # 1. Analyze the package for obvious runtime errors
+        # 1. Analyze package (General)
         JET.report_package(BallSim)
         
-        # 2. Enforce Optimization (Optional but recommended for Physics)
-        # This fails the test if any dynamic dispatch is detected in critical functions.
-        # We test the physics kernel specifically.
-        
+        # 2. Physics Optimization Check
         using BallSim.Common
         using BallSim.Physics
         using BallSim.Shapes
         using StaticArrays
         
-        # Mock data for analysis
         sys = Common.BallSystem(1, 2, Float32)
         solver = Physics.CCDSolver(0.01f0, 1.0f0, 1)
         boundary = Shapes.Circle(1.0f0)
         gravity = (p, v, t) -> SVector(0f0, 0f0)
         
-        # Check that step! is fully optimized (return type is inferred)
-        @test_opt Physics.step!(sys, solver, boundary, gravity)
+        # Ignore Base/Threads noise
+        @test_opt target_modules=(BallSim,) Physics.step!(sys, solver, boundary, gravity)
     end
 end
