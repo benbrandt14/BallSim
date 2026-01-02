@@ -5,12 +5,11 @@
 
 <img width="1562" height="1514" alt="image" src="https://github.com/user-attachments/assets/335fab92-36f8-40ad-9b98-db4e8cda0d6d" />
 
-```markdown
 # BallSim.jl
 
 A high-performance, multi-threaded 2D physics engine written in Julia. Designed for massive particle simulations ($N > 10^6$) with a decoupled rendering pipeline capable of 8K visualizations.
 
-## 🚀 Features
+## Features
 
 * **Performance:** Structure-of-Arrays (SoA) data layout with multi-threaded physics kernels.
 * **Stability:** Type-stable design verified by `JET.jl` static analysis.
@@ -18,7 +17,7 @@ A high-performance, multi-threaded 2D physics engine written in Julia. Designed 
 * **"Darkroom" Rendering:** Headless HDF5 export pipeline with a separate high-res rendering tool (supports Logarithmic Tone Mapping).
 * **Extensible:** Easy interfaces for defining new Shapes, Force Fields, and Scenarios.
 
-## 📦 Installation
+## Installation
 
 ```bash
 git clone [https://github.com/benbrandt14/BallSim](https://github.com/benbrandt14/BallSim)
@@ -27,7 +26,7 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 ```
 
-## 🎮 Usage
+## Usage
 
 ### 1. The Engine (Simulation)
 
@@ -61,7 +60,7 @@ julia --project=. tools/render_frame.jl sandbox/data_123456.h5 10
 * **Output:** A 4K (3840x2160) PNG with logarithmic tone mapping.
 * **Performance:** Multi-threaded accumulation buffer; renders 1M particles in milliseconds.
 
-## 🛠️ Extension Guide
+## Extension Guide
 
 BallSim is built on a "Plugin" architecture. You can extend it without modifying the core loop.
 
