@@ -16,7 +16,32 @@ function get_force_field end
 function get_default_solver end
 
 # ==============================================================================
-# 2. CORE DATA STRUCTURES
+# 2. OUTPUT MODES
+# ==============================================================================
+
+abstract type OutputMode end
+
+struct InteractiveMode <: OutputMode
+    res::Int
+    fps::Int
+end
+InteractiveMode(; res=800, fps=60) = InteractiveMode(res, fps)
+
+struct RenderMode <: OutputMode
+    outfile::String
+    fps::Int
+    res::Int
+end
+RenderMode(file; fps=60, res=1080) = RenderMode(file, fps, res)
+
+struct ExportMode <: OutputMode
+    outfile::String
+    interval::Int
+end
+ExportMode(file; interval=1) = ExportMode(file, interval)
+
+# ==============================================================================
+# 3. CORE DATA STRUCTURES
 # ==============================================================================
 
 """
@@ -25,7 +50,7 @@ function get_default_solver end
 Physical state.
 - D: Dimensions (2, 3)
 - T: Precision (Float32, Float64)
-- S: Storage Type (StructArray{...}) <--- NEW PARAMETER
+- S: Storage Type (StructArray{...})
 """
 mutable struct BallSystem{D, T, S}
     data::S
@@ -33,15 +58,12 @@ mutable struct BallSystem{D, T, S}
     iter::Int
 
     function BallSystem(N::Int, D::Int, T::Type=Float32)
-        # Initialize raw columns
         pos = zeros(SVector{D, T}, N)
         vel = zeros(SVector{D, T}, N)
         active = zeros(Bool, N)
 
-        # Bind to StructArray
         data = StructArray((pos=pos, vel=vel, active=active))
         
-        # We let the compiler infer the complex type 'S' from 'data'
         S = typeof(data)
         new{D, T, S}(data, zero(T), 0)
     end
