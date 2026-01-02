@@ -1,0 +1,29 @@
+{
+    "simulation": {
+        "N": 50000,
+        "duration": 10.0
+    },
+    "physics": {
+        "dt": 0.002,
+        "solver": "CCD",
+        "gravity": {
+            "type": "Central",
+            "params": {
+                "strength": 20.0,
+                "mode": "attractor"
+            }
+        },
+        "boundary": {
+            "type": "Circle",
+            "params": {
+                "radius": 1.0
+            }
+        }
+    },
+    "output": {
+        "mode": "interactive",
+        "res": 800,
+        "fps": 60,
+        "filename": "sandbox/simulation"
+    }
+}
