@@ -35,9 +35,8 @@ Used to trap particles INSIDE a shape (e.g., inside a Circle).
 struct Inverted{D, B <: Common.AbstractBoundary{D}} <: Common.AbstractBoundary{D}
     inner::B
 end
-# Convenience constructor
-Inverted(b::Common.AbstractBoundary{D}) where D = Inverted{D, typeof(b)}(b)
-
+# NOTE: Removed manual convenience constructor to fix "Method overwritten" warning.
+# Julia automatically generates Inverted(b) -> Inverted{D, typeof(b)}(b).
 
 # ==============================================================================
 # 3. IMPLEMENTATIONS
@@ -59,7 +58,7 @@ function Common.sdf(b::Box, p::SVector{2}, t)
 end
 
 function Common.normal(b::Box, p::SVector{2}, t)
-    # Gradient approximation
+    # Numerical Gradient
     ϵ = 1e-4f0
     d0 = Common.sdf(b, p, t)
     nx = Common.sdf(b, p + SVector(ϵ, 0f0), t) - d0
@@ -69,19 +68,28 @@ end
 
 # --- Ellipsoid ---
 function Common.sdf(b::Ellipsoid, p::SVector{2}, t)
-    # Simple approximation: Map to unit sphere, get dist, scale back by min radius
-    # This is conservative (underestimates distance) which is safe for collisions.
+    # Gradient Normalization Approximation.
+    # d ≈ (f(p)) / |∇f(p)|
+    # This is more accurate for elongated shapes than simple scaling.
     
-    # Avoid division by zero if rx/ry are 0 (unlikely for valid shape)
-    scaled = p ./ SVector(b.rx, b.ry)
-    d_sphere = norm(scaled) - 1.0f0
+    rx, ry = b.rx, b.ry
+    k = norm(p ./ SVector(rx, ry))
     
-    # Scale back. Using the minimum radius ensures we don't tunnel.
-    return d_sphere * min(b.rx, b.ry)
+    # Handle singularity at center
+    if k < 1e-6
+        return -min(rx, ry)
+    end
+    
+    # ∇k = ( x / (k*rx^2), y / (k*ry^2) )
+    gx = p[1] / (k * rx^2)
+    gy = p[2] / (k * ry^2)
+    grad_len = sqrt(gx^2 + gy^2)
+    
+    return (k - 1.0f0) / grad_len
 end
 
 function Common.normal(b::Ellipsoid, p::SVector{2}, t)
-    # Gradient of equation (x/rx)^2 + (y/ry)^2 = 1
+    # Gradient of implicit surface
     nx = 2 * p[1] / (b.rx^2)
     ny = 2 * p[2] / (b.ry^2)
     return normalize(SVector(nx, ny))
@@ -89,14 +97,12 @@ end
 
 # --- Inverted Logic ---
 function Common.sdf(b::Inverted, p::SVector, t)
-    # Flip the sign!
-    # If Circle SDF was -5 (Inside), Inverted is +5 (Safe).
+    # Inside becomes Safe (+), Outside becomes Collision (-)
     return -Common.sdf(b.inner, p, t)
 end
 
 function Common.normal(b::Inverted, p::SVector, t)
-    # Flip the normal!
-    # If Circle normal pointed Out, Inverted points In.
+    # Normal points Inward
     return -Common.normal(b.inner, p, t)
 end
 
