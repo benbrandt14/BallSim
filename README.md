@@ -9,6 +9,8 @@
 
 A high-performance, multi-threaded 2D physics engine written in Julia. Designed for massive particle simulations ($N > 10^6$) with a decoupled rendering pipeline capable of 8K visualizations.
 
+Inspired by [the work of Alexander Gustafsson](https://www.youtube.com/watch?v=VJn2cHscTUM)
+
 ## Features
 
 * **Performance:** Structure-of-Arrays (SoA) data layout with multi-threaded physics kernels.

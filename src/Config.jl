@@ -19,7 +19,7 @@ struct SimulationConfig
     # Physics
     dt::Float32
     solver::Symbol
-    solver_params::Dict{Symbol, Any} # New: Hold substeps, restitution
+    solver_params::Dict{Symbol, Any}
     
     gravity_type::Symbol
     gravity_params::Dict{Symbol, Any}
@@ -54,7 +54,7 @@ end
 
 function validate_boundary_params(type, params)
     if type in (:Circle, :InvertedCircle)
-        if !haskey(params, :radius) error("Config Error: Boundary '$type' requires 'radius' parameter.") end
+        if !haskey(params, :radius) error("Config Error: Boundary '$type' requires 'radius'.") end
         if params[:radius] <= 0 error("Config Error: 'radius' must be positive.") end
     elseif type == :Box
         if !haskey(params, :width) || !haskey(params, :height) error("Config Error: Box requires 'width' and 'height'.") end
@@ -75,7 +75,7 @@ function validate_gravity_params(type, params)
 end
 
 # ==============================================================================
-# FACTORY FUNCTIONS
+# LOADER
 # ==============================================================================
 
 function load_config(path::String)
@@ -87,44 +87,45 @@ function load_config(path::String)
     if !haskey(data, :simulation) error("Missing 'simulation' block") end
     sim = data.simulation
     
-    # Support "N" for backward compat, but prefer "params" dictionary
     scen_type = Symbol(get(sim, :type, "Spiral"))
     scen_params = Dict{Symbol, Any}(k => v for (k, v) in get(sim, :params, Dict()))
     
-    # If N is at top level (old style), inject it into params
+    # Backward compat for top-level N
     if haskey(sim, :N)
-        scen_params[:N] = sim.N
+        scen_params[:N] = validate_positive(sim.N, "simulation.N")
     end
     
-    duration = Float64(get(sim, :duration, 10.0))
+    duration = validate_positive(Float64(get(sim, :duration, 10.0)), "simulation.duration")
 
     # 2. Physics
     if !haskey(data, :physics) error("Missing 'physics' block") end
     phys = data.physics
-    dt = Float32(get(phys, :dt, 0.002))
-    solver = Symbol(get(phys, :solver, "CCD"))
-    # Capture optional solver params
+    dt = validate_positive(Float32(get(phys, :dt, 0.002)), "physics.dt")
+    solver = validate_choice(Symbol(get(phys, :solver, "CCD")), [:CCD], "physics.solver")
+    
     solver_params = Dict{Symbol, Any}(k => v for (k, v) in get(phys, :solver_params, Dict()))
 
     # Gravity
     if !haskey(phys, :gravity) error("Missing 'physics.gravity'") end
     grav = phys.gravity
-    grav_type = Symbol(get(grav, :type, "Zero"))
+    grav_type = validate_choice(Symbol(get(grav, :type, "Zero")), [:Uniform, :Central, :Zero], "gravity.type")
     grav_params = Dict{Symbol, Any}(k => v for (k, v) in get(grav, :params, Dict()))
+    validate_gravity_params(grav_type, grav_params)
     
     # Boundary
     if !haskey(phys, :boundary) error("Missing 'physics.boundary'") end
     bound = phys.boundary
-    bound_type = Symbol(get(bound, :type, "Circle"))
+    bound_type = validate_choice(Symbol(get(bound, :type, "Circle")), [:Circle, :Box, :Ellipsoid, :InvertedCircle], "boundary.type")
     bound_params = Dict{Symbol, Any}(k => v for (k, v) in get(bound, :params, Dict()))
+    validate_boundary_params(bound_type, bound_params)
     
     # 3. Output
     if !haskey(data, :output) error("Missing 'output' block") end
     out = data.output
-    mode = Symbol(get(out, :mode, "interactive"))
+    mode = validate_choice(Symbol(get(out, :mode, "interactive")), [:interactive, :render, :export], "output.mode")
     output_file = get(out, :filename, "sandbox/output")
-    res = get(out, :res, 800)
-    fps = get(out, :fps, 60)
+    res = validate_positive(get(out, :res, 800), "output.res")
+    fps = validate_positive(get(out, :fps, 60), "output.fps")
 
     return SimulationConfig(
         scen_type, scen_params, duration,
@@ -141,11 +142,9 @@ function create_scenario(cfg::SimulationConfig)
     t = cfg.scenario_type
     p = cfg.scenario_params
     
-    # We validate "N" existence for Spiral
     if t == :Spiral
         N = get(p, :N, 1000)
         return Scenarios.SpiralScenario(N=Int(N))
-    # Here is where you would add :Galaxy, :Random, etc.
     else
         error("Unknown Scenario Type: $t")
     end
@@ -153,7 +152,6 @@ end
 
 function create_solver(cfg::SimulationConfig)
     if cfg.solver == :CCD
-        # Defaults: restitution=1.0 (bouncy), substeps=8
         rest = Float32(get(cfg.solver_params, :restitution, 1.0))
         sub  = Int(get(cfg.solver_params, :substeps, 8))
         return Physics.CCDSolver(cfg.dt, rest, sub)
@@ -162,7 +160,6 @@ function create_solver(cfg::SimulationConfig)
     end
 end
 
-# (create_boundary, create_gravity, create_mode remain the same)
 function create_boundary(cfg::SimulationConfig)
     t = cfg.boundary_type
     p = cfg.boundary_params
