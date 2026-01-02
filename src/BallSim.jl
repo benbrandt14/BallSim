@@ -19,53 +19,27 @@ include("Physics.jl")
 include("Scenarios.jl")
 include("SimIO.jl")
 include("Vis.jl")
-
-# Config depends on the above, so include it last (or pass types to it)
-# To avoid cyclic deps if Config needs types, we usually put Config logic here 
-# or make Config depend on Common/Shapes etc.
-include("Config.jl") 
+include("Config.jl")
 
 export Common, Scenarios, Shapes, Fields, Physics, SimIO, Vis, Config
 
 # ==============================================================================
-# 1. OUTPUT MODES
+# NOTE: OutputMode structs moved to Common.jl to support Config module
 # ==============================================================================
 
-abstract type OutputMode end
-
-struct InteractiveMode <: OutputMode
-    res::Int
-    fps::Int
-end
-InteractiveMode(; res=800, fps=60) = InteractiveMode(res, fps)
-
-struct RenderMode <: OutputMode
-    outfile::String
-    fps::Int
-    res::Int
-end
-RenderMode(file; fps=60, res=1080) = RenderMode(file, fps, res)
-
-struct ExportMode <: OutputMode
-    outfile::String
-    interval::Int
-end
-ExportMode(file; interval=1) = ExportMode(file, interval)
-
-
 # ==============================================================================
-# 2. THE DRIVER
+# THE DRIVER
 # ==============================================================================
 
 function run_simulation(config_path::String)
     println("⚙️ Loading Configuration: $config_path")
     cfg = Config.load_config(config_path)
     
-    # 1. Setup Scenario (For now default Spiral, later parameterize this too)
+    # 1. Setup Scenario
     scen = Scenarios.SpiralScenario(N=cfg.N)
     sys = Common.setup_system(scen)
     
-    # 2. Build Physics from Config (The Factory)
+    # 2. Build Physics from Config
     gravity = Config.create_gravity(cfg)
     boundary = Config.create_boundary(cfg)
     solver = Config.create_solver(cfg)
@@ -81,8 +55,9 @@ function run_simulation(config_path::String)
     _run_loop(sys, mode, solver, boundary, gravity, cfg.duration)
 end
 
-# --- Loop A: Interactive (The Lab) ---
-function _run_loop(sys, mode::InteractiveMode, solver, boundary, gravity, duration)
+# --- Loop A: Interactive ---
+function _run_loop(sys, mode::Common.InteractiveMode, solver, boundary, gravity, duration)
+    # NOTE: Updated signature to use Common.InteractiveMode
     fig = Figure(size=(mode.res, mode.res), backgroundcolor=:black)
     ax = Axis(fig[1,1], aspect=DataAspect(), backgroundcolor=:black, title="Initializing...")
     hidedecorations!(ax)
@@ -91,9 +66,6 @@ function _run_loop(sys, mode::InteractiveMode, solver, boundary, gravity, durati
     grid = zeros(Float32, mode.res, mode.res)
     obs_grid = Observable(grid)
     heatmap!(ax, -1.1 .. 1.1, -1.1 .. 1.1, obs_grid, colormap=:inferno, colorrange=(0, 5))
-    
-    # Draw Boundary (Visual Approximation)
-    # Ideally we use `boundary` type to decide what to draw
     arc!(ax, Point2f(0,0), 1.0, 0.0, 2π, color=:white, linewidth=2)
 
     println("🔴 Live View Active.")
@@ -129,7 +101,7 @@ function _run_loop(sys, mode::InteractiveMode, solver, boundary, gravity, durati
 end
 
 # --- Loop B: Export ---
-function _run_loop(sys, mode::ExportMode, solver, boundary, gravity, duration)
+function _run_loop(sys, mode::Common.ExportMode, solver, boundary, gravity, duration)
     h5open(mode.outfile, "w") do file
         HDF5.attributes(file)["scenario"] = string(typeof(sys))
         HDF5.attributes(file)["dt"] = solver.dt
@@ -152,7 +124,7 @@ function _run_loop(sys, mode::ExportMode, solver, boundary, gravity, duration)
 end
 
 # --- Loop C: Render ---
-function _run_loop(sys, mode::RenderMode, solver, boundary, gravity, duration)
+function _run_loop(sys, mode::Common.RenderMode, solver, boundary, gravity, duration)
     fig = Figure(size=(mode.res, mode.res), backgroundcolor=:black)
     ax = Axis(fig[1,1], aspect=DataAspect(), backgroundcolor=:black)
     hidedecorations!(ax)
@@ -182,12 +154,11 @@ end
 
 function command_line_main()
     if length(ARGS) < 1
-        println("Usage: julia ... BallSim.command_line_main <config.json>")
-        println("Using default 'config.json' if available...")
+        println("Using default 'config.json'...")
         if isfile("config.json")
             run_simulation("config.json")
         else
-            error("No config file provided and 'config.json' not found.")
+            error("config.json not found")
         end
     else
         run_simulation(ARGS[1])

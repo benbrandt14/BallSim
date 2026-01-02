@@ -2,48 +2,30 @@ module Config
 
 using JSON3
 using StaticArrays
-using ..Common
+using ..Common # OutputMode is now here
 using ..Shapes
 using ..Fields
 using ..Physics
 using ..Scenarios
-using ..BallSim: OutputMode, InteractiveMode, RenderMode, ExportMode
-
-# ==============================================================================
-# 1. DATA STRUCTURES (The Schema)
-# ==============================================================================
 
 struct SimulationConfig
     N::Int
     duration::Float64
-    mode::Symbol       # :interactive, :render, :export
+    mode::Symbol       
     output_file::String
-    
-    # Physics Overrides
     dt::Float32
-    solver::Symbol     # :CCD
+    solver::Symbol     
     gravity_type::Symbol
     gravity_params::Dict{Symbol, Any}
-    
-    # Boundary Config
     boundary_type::Symbol
     boundary_params::Dict{Symbol, Any}
-    
-    # Visuals
     res::Int
     fps::Int
 end
 
-# ==============================================================================
-# 2. FACTORY FUNCTIONS
-# ==============================================================================
-
 function load_config(path::String)
     json_string = read(path, String)
     data = JSON3.read(json_string)
-    
-    # Helper to safe-get keys
-    get_sym(obj, key, default) = Symbol(get(obj, key, default))
     
     return SimulationConfig(
         data.simulation.N,
@@ -86,7 +68,6 @@ function create_gravity(cfg::SimulationConfig)
     p = cfg.gravity_params
     
     if t == :Uniform
-        # Expects a vector [x, y]
         v = p[:vector]
         return Fields.UniformField(SVector(Float32(v[1]), Float32(v[2])))
     elseif t == :Central
@@ -105,7 +86,6 @@ end
 
 function create_solver(cfg::SimulationConfig)
     if cfg.solver == :CCD
-        # We hardcode restitution for now, or add to config
         return Physics.CCDSolver(cfg.dt, 1.0f0, 8)
     else
         error("Unknown Solver: $(cfg.solver)")
@@ -114,16 +94,15 @@ end
 
 function create_mode(cfg::SimulationConfig)
     if cfg.mode == :interactive
-        return InteractiveMode(res=cfg.res, fps=cfg.fps)
+        return Common.InteractiveMode(res=cfg.res, fps=cfg.fps)
     elseif cfg.mode == :render
         mkpath(dirname(cfg.output_file))
-        # ensure .mp4
         fname = endswith(cfg.output_file, ".mp4") ? cfg.output_file : "$(cfg.output_file).mp4"
-        return RenderMode(fname, fps=cfg.fps, res=cfg.res)
+        return Common.RenderMode(fname, fps=cfg.fps, res=cfg.res)
     elseif cfg.mode == :export
         mkpath(dirname(cfg.output_file))
         fname = endswith(cfg.output_file, ".h5") ? cfg.output_file : "$(cfg.output_file).h5"
-        return ExportMode(fname, interval=10)
+        return Common.ExportMode(fname, interval=10)
     else
         error("Unknown Mode: $(cfg.mode)")
     end
