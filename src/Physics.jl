@@ -1,128 +1,83 @@
 module Physics
-using LinearAlgebra
-using StaticArrays
+
 using ..Common
+using StaticArrays
+using LinearAlgebra
 
-# --- Solver 1: Discrete (Symplectic Euler) ---
-struct DiscreteSolver{T} <: Common.AbstractSolver
-    dt::T
+# ==============================================================================
+# SOLVERS
+# ==============================================================================
+
+struct CCDSolver <: Common.AbstractSolver
+    dt::Float32
+    restitution::Float32
     substeps::Int
-    restitution::T
 end
 
-function step!(sys::Common.BallSystem{D,T}, solver::DiscreteSolver, boundary, force_fn) where {D,T}
+# ==============================================================================
+# KERNELS
+# ==============================================================================
+
+"""
+    step!(sys, solver, boundary, gravity_func)
+
+The main physics loop. 
+"""
+function step!(
+    sys::Common.BallSystem{D, T, S},
+    solver::CCDSolver, 
+    boundary::Common.AbstractBoundary{D}, 
+    gravity_func::Function
+) where {D, T, S}
+    
     dt_sub = solver.dt / solver.substeps
-
-    pos = sys.data.pos
-    vel = sys.data.vel
-    act = sys.data.active
-
+    
+    # Pre-calculate epsilon for projection to avoid scientific notation types
+    epsilon = 0.00001f0 
+    
+    # Iterate Substeps
     for _ in 1:solver.substeps
+        
+        # Parallel Loop over Structure of Arrays
+        Threads.@threads for i in 1:length(sys.data.pos)
+            if sys.data.active[i]
+                p = sys.data.pos[i]
+                v = sys.data.vel[i]
+                
+                # 1. Integration (Symplectic Euler)
+                f = gravity_func(p, v, sys.t)
+                v_new = v + f * dt_sub
+                p_new = p + v_new * dt_sub
+                
+                # 2. Collision Detection (SDF)
+                dist = Common.sdf(boundary, p_new, sys.t)
+                
+                if dist > 0
+                    # Collision Response
+                    n = Common.normal(boundary, p_new, sys.t)
+                    
+                    # Project back to surface (Fixing potential 'f0' typo here)
+                    p_new = p_new - n * (dist + epsilon)
+                    
+                    # Reflect velocity
+                    v_normal = dot(v_new, n)
+                    if v_normal > 0
+                        # r = 1 + restitution
+                        r = 1.0f0 + solver.restitution
+                        v_new = v_new - r * v_normal * n
+                    end
+                end
+                
+                # 3. Write Back
+                sys.data.pos[i] = p_new
+                sys.data.vel[i] = v_new
+            end
+        end
+        
         sys.t += dt_sub
-        Threads.@threads for i in eachindex(pos)
-            if !act[i]
-                continue
-            end
-
-            # 1. Integration
-            acc = force_fn(pos[i], vel[i], sys.t)
-            vel[i] += acc * dt_sub
-            pos[i] += vel[i] * dt_sub
-
-            # 2. Boundary Check
-            d = Common.sdf(boundary, pos[i], sys.t)
-
-            if d > 0
-                n = Common.normal(boundary, pos[i], sys.t)
-                vn = dot(vel[i], n)
-                if vn > 0 # Moving out
-                    vel[i] -= (1 + solver.restitution) * vn * n
-                end
-                pos[i] -= n * (d * 1.001f0)
-            end
-        end
     end
-end
-
-# --- Solver 2: Continuous Collision Detection (CCD) ---
-struct CCDSolver{T} <: Common.AbstractSolver
-    dt::T
-    restitution::T
-    max_iter::Int
-end
-
-function step!(sys::Common.BallSystem{D,T}, solver::CCDSolver, boundary, force_fn) where {D,T}
-    pos = sys.data.pos
-    vel = sys.data.vel
-    act = sys.data.active
-    sys.t += solver.dt
-
-    Threads.@threads for i in eachindex(pos)
-        if !act[i]
-            continue
-        end
-
-        t_rem = solver.dt
-        iter = 0
-
-        # Adaptive Sub-stepping Loop
-        while t_rem > 1.0f-6 && iter < solver.max_iter
-            iter += 1
-
-            # 1. Determine safe step size
-            # How fast are we going?
-            speed = norm(vel[i])
-
-            # How far to the wall?
-            d = Common.sdf(boundary, pos[i], sys.t)
-
-            # We want to step as far as possible, but not through the wall.
-            # If d < 0 (inside), we are "safe" to move (we are leaving or inside bulk).
-            # If d > 0 (outside/at wall), we need to be careful.
-            # Note: Our SDF convention is: + is OUTSIDE, - is INSIDE.
-            # Wait, check Shapes.jl...
-            # Circle: norm(p) - r.
-            #   Inside (r=1, p=0) -> -1. (Negative Inside).
-            #   Surface -> 0.
-            #   Outside -> Positive.
-
-            # Wait, if we are inside (negative distance), we don't need to limit step
-            # unless we are about to cross OUT (to positive).
-            # The previous logic used abs(d). Let's stick to that for safety.
-
-            dist_to_surface = abs(d)
-
-            # Conservative step: Move 90% of the distance to the wall
-            # or the full time step if we are far away.
-            max_step_dist = max(dist_to_surface, 1.0f-4) # Don't get stuck in Zeno's paradox
-
-            time_to_wall = max_step_dist / (speed + 1.0f-5)
-            step_time = min(t_rem, time_to_wall)
-
-            # 2. Integrate for this sub-step
-            acc = force_fn(pos[i], vel[i], sys.t)
-            vel[i] += acc * step_time
-            pos[i] += vel[i] * step_time
-            t_rem -= step_time
-
-            # 3. Collision Resolution
-            # Are we crossing the boundary? (SDF becomes positive)
-            d_new = Common.sdf(boundary, pos[i], sys.t)
-
-            if d_new > -1.0f-4 # We are effectively at or past surface
-                n = Common.normal(boundary, pos[i], sys.t)
-                vn = dot(vel[i], n)
-
-                if vn > 0 # Moving towards the outside (escaping)
-                    # Reflect
-                    vel[i] -= (1 + solver.restitution) * vn * n
-
-                    # Nudge back inside slightly to prevent "sticking"
-                    pos[i] -= n * 1.0f-4
-                end
-            end
-        end
-    end
+    
+    sys.iter += 1
 end
 
 end

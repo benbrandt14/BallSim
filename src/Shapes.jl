@@ -1,32 +1,48 @@
 module Shapes
-using LinearAlgebra
-using StaticArrays
+
 using ..Common
+using StaticArrays
+using LinearAlgebra
 
-# --- Circle ---
-struct Circle{T} <: Common.AbstractBoundary
-    radius::T
+# ==============================================================================
+# 2D SHAPES
+# ==============================================================================
+
+struct Circle <: Common.AbstractBoundary{2}
+    radius::Float32
 end
 
-Common.sdf(b::Circle, p, t) = norm(p) - b.radius
-Common.normal(b::Circle, p, t) = normalize(p)
-
-# --- Box ---
-struct Box{T} <: Common.AbstractBoundary
-    width::T
-    height::T
+struct Box <: Common.AbstractBoundary{2}
+    width::Float32
+    height::Float32
 end
 
-function Common.sdf(b::Box, p, t)
-    # 1. Shift p to the first quadrant (symmetry)
-    # 2. Subtract half-dimensions to get distance from edge
-    q = abs.(p) .- SVector(b.width / 2, b.height / 2)
+# ==============================================================================
+# IMPLEMENTATIONS
+# ==============================================================================
 
-    # 3. Calculate distance
-    outside_dist = norm(max.(q, 0.0))
-    inside_dist = min(maximum(q), 0.0)
+function Common.sdf(b::Circle, p::SVector{2}, t)
+    return norm(p) - b.radius
+end
 
-    return outside_dist + inside_dist
+function Common.normal(b::Circle, p::SVector{2}, t)
+    # Simple radial normal
+    return normalize(p)
+end
+
+function Common.sdf(b::Box, p::SVector{2}, t)
+    # Signed Distance Box logic
+    d = abs.(p) .- SVector(b.width/2, b.height/2)
+    return norm(max.(d, 0.0f0)) + min(maximum(d), 0.0f0)
+end
+
+function Common.normal(b::Box, p::SVector{2}, t)
+    # Numerical Gradient (Finite Difference) for robustness
+    ϵ = 1e-4f0
+    d0 = Common.sdf(b, p, t)
+    nx = Common.sdf(b, p + SVector(ϵ, 0f0), t) - d0
+    ny = Common.sdf(b, p + SVector(0f0, ϵ), t) - d0
+    return normalize(SVector(nx, ny))
 end
 
 end

@@ -1,4 +1,5 @@
 # BallSim: Physics Playground for Balls
+[![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 **Status:** Freshly Vibed Trash | **Core:** Julia 1.10+ | **Rendering:** Makie
 
