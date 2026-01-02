@@ -29,34 +29,27 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 ## Usage
 
-### 1. The Engine (Simulation)
-
-The engine is controlled via a declarative `config.json` file. This allows for reproducible experiments without complex command-line arguments.
-
-**Run with default config:**
-
-```bash
-julia --project=. -e 'using BallSim; BallSim.command_line_main()' config.json
-
-```
-
 **Configuration Structure (`config.json`):**
-You can customize the simulation mode, physics solvers, boundaries, and forces directly in this file.
 
 ```json
 {
     "simulation": {
-        "N": 50000,
+        "type": "Spiral", // Extendable via Scenarios.jl
+        "params": { "N": 50000 },
         "duration": 10.0
     },
     "physics": {
         "dt": 0.002,
         "solver": "CCD",
+        "solver_params": {
+            "restitution": 0.5, // 1.0 = Bouncy, 0.0 = Sticky
+            "substeps": 8       // Higher = More precise collision
+        },
         "gravity": {
             "type": "Central",  // Options: "Central", "Uniform", "Zero"
             "params": {
                 "strength": 20.0,
-                "mode": "attractor", // Options: "attractor", "repulsor"
+                "mode": "attractor",
                 "center": [0.0, 0.0]
             }
         },
@@ -74,8 +67,6 @@ You can customize the simulation mode, physics solvers, boundaries, and forces d
         "filename": "sandbox/simulation"
     }
 }
-
-```
 
 ### 2. The Darkroom (High-Res Visualization)
 

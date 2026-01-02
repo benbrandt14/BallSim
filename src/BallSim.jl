@@ -24,10 +24,6 @@ include("Config.jl")
 export Common, Scenarios, Shapes, Fields, Physics, SimIO, Vis, Config
 
 # ==============================================================================
-# NOTE: OutputMode structs moved to Common.jl to support Config module
-# ==============================================================================
-
-# ==============================================================================
 # THE DRIVER
 # ==============================================================================
 
@@ -35,8 +31,8 @@ function run_simulation(config_path::String)
     println("⚙️ Loading Configuration: $config_path")
     cfg = Config.load_config(config_path)
     
-    # 1. Setup Scenario
-    scen = Scenarios.SpiralScenario(N=cfg.N)
+    # 1. Setup Scenario (DYNAMIC NOW)
+    scen = Config.create_scenario(cfg) # <--- Changed
     sys = Common.setup_system(scen)
     
     # 2. Build Physics from Config

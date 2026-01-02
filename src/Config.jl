@@ -9,16 +9,27 @@ using ..Physics
 using ..Scenarios
 
 struct SimulationConfig
-    N::Int
+    # Scenario
+    scenario_type::Symbol
+    scenario_params::Dict{Symbol, Any}
+    
+    # Simulation meta
     duration::Float64
-    mode::Symbol       
-    output_file::String
+    
+    # Physics
     dt::Float32
-    solver::Symbol     
+    solver::Symbol
+    solver_params::Dict{Symbol, Any} # New: Hold substeps, restitution
+    
     gravity_type::Symbol
     gravity_params::Dict{Symbol, Any}
+    
     boundary_type::Symbol
     boundary_params::Dict{Symbol, Any}
+    
+    # Output
+    mode::Symbol       
+    output_file::String
     res::Int
     fps::Int
 end
@@ -68,65 +79,93 @@ end
 # ==============================================================================
 
 function load_config(path::String)
-    if !isfile(path)
-        error("Config Error: File not found at $path")
-    end
-
+    if !isfile(path) error("Config Error: File not found at $path") end
     json_string = read(path, String)
-    data = try
-        JSON3.read(json_string)
-    catch e
-        error("Config Error: Invalid JSON syntax in $path")
+    data = try JSON3.read(json_string) catch e error("Invalid JSON") end
+    
+    # 1. Simulation / Scenario
+    if !haskey(data, :simulation) error("Missing 'simulation' block") end
+    sim = data.simulation
+    
+    # Support "N" for backward compat, but prefer "params" dictionary
+    scen_type = Symbol(get(sim, :type, "Spiral"))
+    scen_params = Dict{Symbol, Any}(k => v for (k, v) in get(sim, :params, Dict()))
+    
+    # If N is at top level (old style), inject it into params
+    if haskey(sim, :N)
+        scen_params[:N] = sim.N
     end
     
-    # 1. Simulation Block
-    if !haskey(data, :simulation) error("Config Error: Missing 'simulation' block") end
-    sim = data.simulation
-    N = validate_positive(get(sim, :N, 50000), "simulation.N")
-    duration = validate_positive(Float64(get(sim, :duration, 10.0)), "simulation.duration")
+    duration = Float64(get(sim, :duration, 10.0))
 
-    # 2. Output Block
-    if !haskey(data, :output) error("Config Error: Missing 'output' block") end
-    out = data.output
-    mode = validate_choice(Symbol(get(out, :mode, "interactive")), [:interactive, :render, :export], "output.mode")
-    output_file = get(out, :filename, "sandbox/output")
-    res = validate_positive(get(out, :res, 800), "output.res")
-    fps = validate_positive(get(out, :fps, 60), "output.fps")
-    
-    # 3. Physics Block
-    if !haskey(data, :physics) error("Config Error: Missing 'physics' block") end
+    # 2. Physics
+    if !haskey(data, :physics) error("Missing 'physics' block") end
     phys = data.physics
-    dt = validate_positive(Float32(get(phys, :dt, 0.002)), "physics.dt")
-    solver = validate_choice(Symbol(get(phys, :solver, "CCD")), [:CCD], "physics.solver")
-    
+    dt = Float32(get(phys, :dt, 0.002))
+    solver = Symbol(get(phys, :solver, "CCD"))
+    # Capture optional solver params
+    solver_params = Dict{Symbol, Any}(k => v for (k, v) in get(phys, :solver_params, Dict()))
+
     # Gravity
-    if !haskey(phys, :gravity) error("Config Error: Missing 'physics.gravity' block") end
+    if !haskey(phys, :gravity) error("Missing 'physics.gravity'") end
     grav = phys.gravity
-    grav_type = validate_choice(Symbol(get(grav, :type, "Zero")), [:Uniform, :Central, :Zero], "gravity.type")
+    grav_type = Symbol(get(grav, :type, "Zero"))
     grav_params = Dict{Symbol, Any}(k => v for (k, v) in get(grav, :params, Dict()))
     
     # Boundary
-    if !haskey(phys, :boundary) error("Config Error: Missing 'physics.boundary' block") end
+    if !haskey(phys, :boundary) error("Missing 'physics.boundary'") end
     bound = phys.boundary
-    bound_type = validate_choice(Symbol(get(bound, :type, "Circle")), [:Circle, :Box, :Ellipsoid, :InvertedCircle], "boundary.type")
+    bound_type = Symbol(get(bound, :type, "Circle"))
     bound_params = Dict{Symbol, Any}(k => v for (k, v) in get(bound, :params, Dict()))
     
-    # Deep Validation
-    validate_boundary_params(bound_type, bound_params)
-    validate_gravity_params(grav_type, grav_params)
+    # 3. Output
+    if !haskey(data, :output) error("Missing 'output' block") end
+    out = data.output
+    mode = Symbol(get(out, :mode, "interactive"))
+    output_file = get(out, :filename, "sandbox/output")
+    res = get(out, :res, 800)
+    fps = get(out, :fps, 60)
 
     return SimulationConfig(
-        N, duration, mode, output_file,
-        dt, solver, grav_type, grav_params,
+        scen_type, scen_params, duration,
+        dt, solver, solver_params,
+        grav_type, grav_params,
         bound_type, bound_params,
-        res, fps
+        mode, output_file, res, fps
     )
 end
 
+# --- Factories ---
+
+function create_scenario(cfg::SimulationConfig)
+    t = cfg.scenario_type
+    p = cfg.scenario_params
+    
+    # We validate "N" existence for Spiral
+    if t == :Spiral
+        N = get(p, :N, 1000)
+        return Scenarios.SpiralScenario(N=Int(N))
+    # Here is where you would add :Galaxy, :Random, etc.
+    else
+        error("Unknown Scenario Type: $t")
+    end
+end
+
+function create_solver(cfg::SimulationConfig)
+    if cfg.solver == :CCD
+        # Defaults: restitution=1.0 (bouncy), substeps=8
+        rest = Float32(get(cfg.solver_params, :restitution, 1.0))
+        sub  = Int(get(cfg.solver_params, :substeps, 8))
+        return Physics.CCDSolver(cfg.dt, rest, sub)
+    else
+        error("Unknown Solver: $(cfg.solver)")
+    end
+end
+
+# (create_boundary, create_gravity, create_mode remain the same)
 function create_boundary(cfg::SimulationConfig)
     t = cfg.boundary_type
     p = cfg.boundary_params
-    
     if t == :Circle
         return Shapes.Circle(Float32(p[:radius]))
     elseif t == :Box
@@ -143,7 +182,6 @@ end
 function create_gravity(cfg::SimulationConfig)
     t = cfg.gravity_type
     p = cfg.gravity_params
-    
     if t == :Uniform
         v = p[:vector]
         return Fields.UniformField(SVector(Float32(v[1]), Float32(v[2])))
@@ -158,14 +196,6 @@ function create_gravity(cfg::SimulationConfig)
         return (p, v, t) -> SVector(0f0, 0f0)
     else
         error("Unknown Gravity Type: $t")
-    end
-end
-
-function create_solver(cfg::SimulationConfig)
-    if cfg.solver == :CCD
-        return Physics.CCDSolver(cfg.dt, 1.0f0, 8)
-    else
-        error("Unknown Solver: $(cfg.solver)")
     end
 end
 
