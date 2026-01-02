@@ -126,4 +126,27 @@ using BallSim.Config
             rm(expected_file, force=true)
         end
     end
+
+    @testset "Sanitation" begin
+        # 1. Invalid Mode
+        c_bad_mode = deepcopy(base_config)
+        c_bad_mode[:output][:mode] = "telepathic"
+        with_config(c_bad_mode) do path
+            @test_throws ErrorException Config.load_config(path)
+        end
+
+        # 2. Negative Radius (Physics Validity)
+        c_neg_rad = deepcopy(base_config)
+        c_neg_rad[:physics][:boundary][:params][:radius] = -5.0
+        with_config(c_neg_rad) do path
+            @test_throws ErrorException Config.load_config(path)
+        end
+        
+        # 3. Missing Required Param (Schema)
+        c_missing = deepcopy(base_config)
+        delete!(c_missing[:physics][:boundary][:params], :radius)
+        with_config(c_missing) do path
+            @test_throws ErrorException Config.load_config(path)
+        end
+    end
 end
