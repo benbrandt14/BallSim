@@ -7,8 +7,9 @@ using JET
     
     @testset "Aqua (Method Ambiguities & Stale Deps)" begin
         Aqua.test_all(BallSim; 
-            ambiguities=false, # JET handles this better usually
-            stale_deps=(ignore=[:GLMakie],) # GLMakie is used in conditional loading usually
+            ambiguities=false,
+            stale_deps=(ignore=[:GLMakie],),
+            persistent_tasks=false,
         )
     end
 

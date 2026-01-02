@@ -69,13 +69,15 @@ end
 
 # --- Ellipsoid ---
 function Common.sdf(b::Ellipsoid, p::SVector{2}, t)
-    # Approximation: Scale space to sphere, measure dist, scale back
-    # This is not exact Euclidean distance but works for collisions
-    # if the aspect ratio isn't extreme.
+    # Simple approximation: Map to unit sphere, get dist, scale back by min radius
+    # This is conservative (underestimates distance) which is safe for collisions.
     
-    k0 = length(p ./ SVector(b.rx, b.ry))
-    k1 = length(p ./ (SVector(b.rx, b.ry).^2))
-    return k0 * (k0 - 1.0f0) / k1
+    # Avoid division by zero if rx/ry are 0 (unlikely for valid shape)
+    scaled = p ./ SVector(b.rx, b.ry)
+    d_sphere = norm(scaled) - 1.0f0
+    
+    # Scale back. Using the minimum radius ensures we don't tunnel.
+    return d_sphere * min(b.rx, b.ry)
 end
 
 function Common.normal(b::Ellipsoid, p::SVector{2}, t)
