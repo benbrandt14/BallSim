@@ -14,12 +14,13 @@ using HDF5
 # Sub-modules
 include("Common.jl")
 include("Shapes.jl")
+include("Fields.jl")
 include("Physics.jl")
 include("Scenarios.jl")
 include("SimIO.jl")
 include("Vis.jl")
 
-export Common, Scenarios, Shapes, Physics, SimIO, Vis
+export Common, Scenarios, Shapes, Fields, Physics, SimIO, Vis
 
 # ==============================================================================
 # 1. OUTPUT MODES
