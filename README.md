@@ -14,6 +14,7 @@ A high-performance, multi-threaded 2D physics engine written in Julia. Designed 
 * **Performance:** Structure-of-Arrays (SoA) data layout with multi-threaded physics kernels.
 * **Stability:** Type-stable design verified by `JET.jl` static analysis.
 * **Modular Architecture:** Physics, Geometry, and Rendering are strictly decoupled.
+* **Declarative Configuration:** Full simulation control via JSON files (solvers, fields, boundaries).
 * **"Darkroom" Rendering:** Headless HDF5 export pipeline with a separate high-res rendering tool (supports Logarithmic Tone Mapping).
 * **Extensible:** Easy interfaces for defining new Shapes, Force Fields, and Scenarios.
 
@@ -30,20 +31,49 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 ### 1. The Engine (Simulation)
 
-The main driver is accessed via the command line. It supports three modes:
+The engine is controlled via a declarative `config.json` file. This allows for reproducible experiments without complex command-line arguments.
+
+**Run with default config:**
 
 ```bash
-# INTERACTIVE (Lab Mode)
-# Opens a GLMakie window for real-time tweaking.
-julia --project=. -e 'using BallSim; BallSim.command_line_main()' -- --mode interactive --N 10000
+julia --project=. -e 'using BallSim; BallSim.command_line_main()' config.json
 
-# EXPORT (Production Mode)
-# Runs headless and streams raw data to HDF5.
-julia --project=. -e 'using BallSim; BallSim.command_line_main()' -- --mode export --N 1000000 --duration 5.0
+```
 
-# RENDER (Quick Preview)
-# Renders a standard video (mp4) directly from the simulation.
-julia --project=. -e 'using BallSim; BallSim.command_line_main()' -- --mode render --N 50000
+**Configuration Structure (`config.json`):**
+You can customize the simulation mode, physics solvers, boundaries, and forces directly in this file.
+
+```json
+{
+    "simulation": {
+        "N": 50000,
+        "duration": 10.0
+    },
+    "physics": {
+        "dt": 0.002,
+        "solver": "CCD",
+        "gravity": {
+            "type": "Central",  // Options: "Central", "Uniform", "Zero"
+            "params": {
+                "strength": 20.0,
+                "mode": "attractor", // Options: "attractor", "repulsor"
+                "center": [0.0, 0.0]
+            }
+        },
+        "boundary": {
+            "type": "Circle", // Options: "Circle", "Box", "Ellipsoid", "InvertedCircle"
+            "params": {
+                "radius": 1.0
+            }
+        }
+    },
+    "output": {
+        "mode": "interactive", // Options: "interactive", "render", "export"
+        "res": 800,
+        "fps": 60,
+        "filename": "sandbox/simulation"
+    }
+}
 
 ```
 
@@ -153,6 +183,7 @@ I told Gemini to use a TDD workflow.
 src/
 ├── BallSim.jl       # Main entry point & dependency loader
 ├── Common.jl        # Core Types (BallSystem) & Interfaces
+├── Config.jl        # JSON Configuration Factory
 ├── Physics.jl       # Solvers (CCDSolver) & Integration Kernels
 ├── Shapes.jl        # Geometry (SDFs for Circle, Box, Ellipsoid)
 ├── Fields.jl        # Force Fields (Gravity, Drag, Central)
