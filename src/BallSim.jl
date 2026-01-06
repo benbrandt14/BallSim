@@ -8,7 +8,7 @@ using ProgressMeter
 
 # Visualization & IO
 using CairoMakie
-using GLMakie
+# using GLMakie
 using HDF5
 
 # Sub-modules
