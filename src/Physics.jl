@@ -34,13 +34,6 @@ function step!(
     dt_sub = solver.dt / solver.substeps
     epsilon = 0.00001f0 
     
-    # ⚡ OPTIMIZATION: Loop Inversion & Threading
-    # We move the 'substeps' loop INSIDE the threaded particle loop.
-    # Benefits:
-    # 1. Reduces thread synchronization/spawning overhead by factor of 'substeps' (e.g., 8x).
-    # 2. Keeps particle state (p, v) in CPU registers/L1 cache for all substeps.
-    # 3. Reduces memory writes to sys.data (only write back once per frame).
-
     Threads.@threads for i in 1:length(sys.data.pos)
         @inbounds if sys.data.active[i]
             p = sys.data.pos[i]
