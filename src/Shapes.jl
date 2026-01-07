@@ -22,6 +22,10 @@ struct Ellipsoid <: Common.AbstractBoundary{2}
     ry::Float32
 end
 
+struct Circle3D <: Common.AbstractBoundary{3}
+    radius::Float32
+end
+
 # ==============================================================================
 # 2. MODIFIERS
 # ==============================================================================
@@ -115,6 +119,15 @@ function Common.normal(b::Ellipsoid, p::SVector{2}, t)
     nx = 2 * p[1] / (b.rx^2)
     ny = 2 * p[2] / (b.ry^2)
     return normalize(SVector(nx, ny))
+end
+
+# --- Circle3D ---
+function Common.sdf(b::Circle3D, p::SVector{3}, t)
+    return norm(p) - b.radius
+end
+
+function Common.normal(b::Circle3D, p::SVector{3}, t)
+    return normalize(p)
 end
 
 # --- Inverted Logic ---

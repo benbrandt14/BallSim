@@ -84,6 +84,17 @@ end
 
 # --- Loop C: Render ---
 function _run_loop(sys, mode::Common.RenderMode, solver, boundary, gravity, duration)
+    # 2D Rendering
+    if sys isa Common.BallSystem{2}
+        _render_loop_2d(sys, mode, solver, boundary, gravity, duration)
+    elseif sys isa Common.BallSystem{3}
+        error("RenderMode not supported for 3D yet. Please use ExportMode.")
+    else
+        error("RenderMode not supported for this dimension.")
+    end
+end
+
+function _render_loop_2d(sys, mode, solver, boundary, gravity, duration)
     fig = Figure(size=(mode.res, mode.res), backgroundcolor=:black)
     ax = Axis(fig[1,1], aspect=DataAspect(), backgroundcolor=:black)
     hidedecorations!(ax)
