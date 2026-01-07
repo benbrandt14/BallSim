@@ -15,6 +15,7 @@ struct SimulationConfig
     
     # Simulation meta
     duration::Float64
+    dimensions::Int
     
     # Physics
     dt::Float32
@@ -65,10 +66,10 @@ function validate_boundary_params(type, params)
     end
 end
 
-function validate_gravity_params(type, params)
+function validate_gravity_params(type, params, dims)
     if type == :Uniform
-        if !haskey(params, :vector) error("Config Error: Uniform gravity requires 'vector' [x, y].") end
-        if length(params[:vector]) != 2 error("Config Error: Gravity vector must have 2 components.") end
+        if !haskey(params, :vector) error("Config Error: Uniform gravity requires 'vector'.") end
+        if length(params[:vector]) != dims error("Config Error: Gravity vector must have $dims components.") end
     elseif type == :Central
         if !haskey(params, :strength) error("Config Error: Central gravity requires 'strength'.") end
     end
@@ -96,6 +97,7 @@ function load_config(path::String)
     end
     
     duration = validate_positive(Float64(get(sim, :duration, 10.0)), "simulation.duration")
+    dimensions = validate_choice(Int(get(sim, :dimensions, 2)), [2, 3], "simulation.dimensions")
 
     # 2. Physics
     if !haskey(data, :physics) error("Missing 'physics' block") end
@@ -110,7 +112,7 @@ function load_config(path::String)
     grav = phys.gravity
     grav_type = validate_choice(Symbol(get(grav, :type, "Zero")), [:Uniform, :Central, :Zero], "gravity.type")
     grav_params = Dict{Symbol, Any}(k => v for (k, v) in get(grav, :params, Dict()))
-    validate_gravity_params(grav_type, grav_params)
+    validate_gravity_params(grav_type, grav_params, dimensions)
     
     # Boundary
     if !haskey(phys, :boundary) error("Missing 'physics.boundary'") end
@@ -128,7 +130,7 @@ function load_config(path::String)
     fps = validate_positive(get(out, :fps, 60), "output.fps")
 
     return SimulationConfig(
-        scen_type, scen_params, duration,
+        scen_type, scen_params, duration, dimensions,
         dt, solver, solver_params,
         grav_type, grav_params,
         bound_type, bound_params,
@@ -146,7 +148,11 @@ function create_scenario(cfg::SimulationConfig)
         N = get(p, :N, 1000)
         m_min = get(p, :mass_min, 1.0)
         m_max = get(p, :mass_max, 1.0)
-        return Scenarios.SpiralScenario(N=Int(N), mass_min=Float32(m_min), mass_max=Float32(m_max))
+        if cfg.dimensions == 2
+            return Scenarios.SpiralScenario(N=Int(N), mass_min=Float32(m_min), mass_max=Float32(m_max))
+        elseif cfg.dimensions == 3
+            return Scenarios.SpiralScenario3D(N=Int(N), mass_min=Float32(m_min), mass_max=Float32(m_max))
+        end
     else
         error("Unknown Scenario Type: $t")
     end
@@ -165,34 +171,59 @@ end
 function create_boundary(cfg::SimulationConfig)
     t = cfg.boundary_type
     p = cfg.boundary_params
-    if t == :Circle
-        return Shapes.Circle(Float32(p[:radius]))
-    elseif t == :Box
-        return Shapes.Box(Float32(p[:width]), Float32(p[:height]))
-    elseif t == :Ellipsoid
-        return Shapes.Ellipsoid(Float32(p[:rx]), Float32(p[:ry]))
-    elseif t == :InvertedCircle
-        return Shapes.Inverted(Shapes.Circle(Float32(p[:radius])))
-    else
-        error("Unknown Boundary Type: $t")
+
+    if cfg.dimensions == 3
+        if t == :Circle || t == :Circle3D
+            return Shapes.Circle3D(Float32(p[:radius]))
+        elseif t == :InvertedCircle
+             return Shapes.Inverted(Shapes.Circle3D(Float32(p[:radius])))
+        else
+            error("Boundary '$t' not supported in 3D yet (only Circle/Circle3D).")
+        end
+    else # 2D
+        if t == :Circle
+            return Shapes.Circle(Float32(p[:radius]))
+        elseif t == :Box
+            return Shapes.Box(Float32(p[:width]), Float32(p[:height]))
+        elseif t == :Ellipsoid
+            return Shapes.Ellipsoid(Float32(p[:rx]), Float32(p[:ry]))
+        elseif t == :InvertedCircle
+            return Shapes.Inverted(Shapes.Circle(Float32(p[:radius])))
+        else
+            error("Unknown Boundary Type: $t")
+        end
     end
 end
 
 function create_gravity(cfg::SimulationConfig)
     t = cfg.gravity_type
     p = cfg.gravity_params
+
     if t == :Uniform
         v = p[:vector]
-        return Fields.UniformField(SVector(Float32(v[1]), Float32(v[2])))
+        if cfg.dimensions == 2
+            return Fields.UniformField(SVector(Float32(v[1]), Float32(v[2])))
+        elseif cfg.dimensions == 3
+            return Fields.UniformField(SVector(Float32(v[1]), Float32(v[2]), Float32(v[3])))
+        end
     elseif t == :Central
-        c = get(p, :center, [0.0, 0.0])
+        c = get(p, :center, zeros(Float32, cfg.dimensions))
+        if cfg.dimensions == 2
+            pos = SVector(Float32(c[1]), Float32(c[2]))
+        elseif cfg.dimensions == 3
+            pos = SVector(Float32(c[1]), Float32(c[2]), Float32(c[3]))
+        end
         return Fields.CentralField(
-            SVector(Float32(c[1]), Float32(c[2])),
+            pos,
             Float32(p[:strength]),
             mode = Symbol(get(p, :mode, "attractor"))
         )
     elseif t == :Zero
-        return (p, v, m, t) -> SVector(0f0, 0f0)
+        if cfg.dimensions == 2
+            return (p, v, m, t) -> SVector(0f0, 0f0)
+        elseif cfg.dimensions == 3
+            return (p, v, m, t) -> SVector(0f0, 0f0, 0f0)
+        end
     else
         error("Unknown Gravity Type: $t")
     end

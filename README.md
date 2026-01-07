@@ -7,7 +7,7 @@
 
 # BallSim.jl
 
-A high-performance, multi-threaded 2D physics engine written in Julia. Designed for massive particle simulations ($N > 10^6$) with a decoupled rendering pipeline capable of 8K visualizations.
+A high-performance, multi-threaded 2D and 3D physics engine written in Julia. Designed for massive particle simulations ($N > 10^6$) with a decoupled rendering pipeline capable of 8K visualizations.
 
 Inspired by [the work of Alexander Gustafsson](https://www.youtube.com/watch?v=VJn2cHscTUM)
 
@@ -40,7 +40,8 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
     "simulation": {
         "type": "Spiral", // Extendable via Scenarios.jl
         "params": { "N": 50000 },
-        "duration": 10.0
+        "duration": 10.0,
+        "dimensions": 3  // Optional: 2 (default) or 3
     },
     "physics": {
         "dt": 0.002,
@@ -54,18 +55,18 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
             "params": {
                 "strength": 20.0,
                 "mode": "attractor",
-                "center": [0.0, 0.0]
+                "center": [0.0, 0.0, 0.0] // 3D Center if dimensions=3
             }
         },
         "boundary": {
-            "type": "Circle", // Options: "Circle", "Box", "Ellipsoid", "InvertedCircle"
+            "type": "Circle", // Options: "Circle" (2D/3D), "Box" (2D), "Ellipsoid" (2D), "InvertedCircle"
             "params": {
                 "radius": 1.0
             }
         }
     },
     "output": {
-        "mode": "render", // Options: "interactive" (requires GLMakie), "render", "export"
+        "mode": "export", // Use "export" for 3D. "render"/"interactive" (requires GLMakie) for 2D.
         "res": 800,
         "fps": 60,
         "filename": "sandbox/simulation"
