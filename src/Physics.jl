@@ -27,29 +27,29 @@ function step!(
     sys::Common.BallSystem{D, T, S}, 
     solver::CCDSolver, 
     boundary::Common.AbstractBoundary{D}, 
-    # FIX: Removed ::Function type constraint to allow callable structs (Fields)
-    gravity_func 
-) where {D, T, S}
+    gravity_func::G
+) where {D, T, S, G}
     
     dt_sub = solver.dt / solver.substeps
     epsilon = 0.00001f0 
     
-    for _ in 1:solver.substeps
-        Threads.@threads for i in 1:length(sys.data.pos)
-            if sys.data.active[i]
-                p = sys.data.pos[i]
-                v = sys.data.vel[i]
-                
+    Threads.@threads for i in 1:length(sys.data.pos)
+        @inbounds if sys.data.active[i]
+            p = sys.data.pos[i]
+            v = sys.data.vel[i]
+            t_local = sys.t
+
+            for _ in 1:solver.substeps
                 # 1. Integration
-                f = gravity_func(p, v, sys.t) # Works for Function OR Field struct
+                f = gravity_func(p, v, t_local)
                 v_new = v + f * dt_sub
                 p_new = p + v_new * dt_sub
                 
                 # 2. Collision Detection
-                dist = Common.sdf(boundary, p_new, sys.t)
+                dist = Common.sdf(boundary, p_new, t_local)
                 
                 if dist > 0
-                    n = Common.normal(boundary, p_new, sys.t)
+                    n = Common.normal(boundary, p_new, t_local)
                     p_new = p_new - n * (dist + epsilon)
                     
                     v_normal = dot(v_new, n)
@@ -59,13 +59,19 @@ function step!(
                     end
                 end
                 
-                # 3. Write Back
-                sys.data.pos[i] = p_new
-                sys.data.vel[i] = v_new
+                # Update local state for next substep
+                p = p_new
+                v = v_new
+                t_local += dt_sub
             end
+
+            # 3. Write Back (Once per frame)
+            @inbounds sys.data.pos[i] = p
+            @inbounds sys.data.vel[i] = v
         end
-        sys.t += dt_sub
     end
+
+    sys.t += solver.dt
     sys.iter += 1
 end
 
