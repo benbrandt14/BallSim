@@ -8,7 +8,6 @@
 ### Julia Style
 *   **Performance:** Use type-stable code. Avoid dynamic dispatch in inner loops.
 *   **Data Layout:** Stick to the SoA layout defined in `src/Common.jl` for particle data.
-*   **Static Analysis:** Use `JET.jl` to verify type stability.
 *   **Testing:** Use `Test` standard library. Ensure new features have unit tests.
 
 ### Architecture
@@ -26,7 +25,7 @@ Run `./setup.sh` to install dependencies and run tests.
 
 ### Running Tests
 ```bash
-julia --project=. test/runtests.jl
+julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
 ### Running the Simulation
@@ -42,5 +41,5 @@ using Pkg; Pkg.add("PackageName")
 Ensure `Project.toml` and `Manifest.toml` are up to date and corect.
 
 ## Verification
-*   **Always** run tests after making changes: `julia --project=. test/runtests.jl`
+*   **Always** run tests after making changes: `julia --project=. -e 'using Pkg; Pkg.test()'`
 *   **Check for regressions** in performance or stability if modifying core physics loops.
