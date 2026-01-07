@@ -18,7 +18,7 @@ end
 
 # Generic fallback: Zero gravity if the scenario doesn't specify
 function Common.get_force_field(scen::Common.AbstractScenario{D}) where D
-    return (p, v, t) -> zero(SVector{D, Float32})
+    return (p, v, m, t) -> zero(SVector{D, Float32})
 end
 
 # ==============================================================================
@@ -28,8 +28,10 @@ end
 # --- Spiral Scenario Definition ---
 struct SpiralScenario <: Common.AbstractScenario{2}
     N::Int
+    mass_min::Float32
+    mass_max::Float32
 end
-SpiralScenario(; N=1000) = SpiralScenario(N)
+SpiralScenario(; N=1000, mass_min=1.0f0, mass_max=1.0f0) = SpiralScenario(N, mass_min, mass_max)
 
 # --- Spiral Implementation ---
 
@@ -38,6 +40,7 @@ function initialize!(sys::Common.BallSystem{2, T, S}, scen::SpiralScenario) wher
     
     Threads.@threads for i in 1:scen.N
         sys.data.active[i] = true
+        sys.data.mass[i] = rand(T) * (scen.mass_max - scen.mass_min) + scen.mass_min
         r = sqrt(i / scen.N) * spread
         theta = i * 2.4f0
         
@@ -51,8 +54,10 @@ function initialize!(sys::Common.BallSystem{2, T, S}, scen::SpiralScenario) wher
 end
 
 function Common.get_force_field(scen::SpiralScenario)
-    # Standard Gravity pointing down
-    return (p, v, t) -> SVector(0f0, -3.0f0)
+    # Standard Gravity pointing down.
+    # Returns a closure that computes Force = mass * acceleration
+    # Acceleration is SVector(0f0, -3.0f0)
+    return (p, v, m, t) -> SVector(0f0, -3.0f0) * m
 end
 
 function Common.get_default_solver(scen::SpiralScenario)

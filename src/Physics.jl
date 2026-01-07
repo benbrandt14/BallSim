@@ -37,12 +37,14 @@ function step!(
         @inbounds if sys.data.active[i]
             p = sys.data.pos[i]
             v = sys.data.vel[i]
+            m = sys.data.mass[i]
             t_local = sys.t
 
             for _ in 1:solver.substeps
                 # 1. Integration
-                f = gravity_func(p, v, t_local)
-                v_new = v + f * dt_sub
+                f = gravity_func(p, v, m, t_local)
+                a = f / m
+                v_new = v + a * dt_sub
                 p_new = p + v_new * dt_sub
                 
                 # 2. Collision Detection

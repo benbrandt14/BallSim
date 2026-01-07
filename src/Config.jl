@@ -144,7 +144,9 @@ function create_scenario(cfg::SimulationConfig)
     
     if t == :Spiral
         N = get(p, :N, 1000)
-        return Scenarios.SpiralScenario(N=Int(N))
+        m_min = get(p, :mass_min, 1.0)
+        m_max = get(p, :mass_max, 1.0)
+        return Scenarios.SpiralScenario(N=Int(N), mass_min=Float32(m_min), mass_max=Float32(m_max))
     else
         error("Unknown Scenario Type: $t")
     end
@@ -190,7 +192,7 @@ function create_gravity(cfg::SimulationConfig)
             mode = Symbol(get(p, :mode, "attractor"))
         )
     elseif t == :Zero
-        return (p, v, t) -> SVector(0f0, 0f0)
+        return (p, v, m, t) -> SVector(0f0, 0f0)
     else
         error("Unknown Gravity Type: $t")
     end
