@@ -14,7 +14,6 @@ Inspired by [the work of Alexander Gustafsson](https://www.youtube.com/watch?v=V
 ## Features
 
 * **Performance:** Structure-of-Arrays (SoA) data layout with multi-threaded physics kernels.
-* **Stability:** Type-stable design verified by `JET.jl` static analysis.
 * **Modular Architecture:** Physics, Geometry, and Rendering are strictly decoupled.
 * **Declarative Configuration:** Full simulation control via JSON files (solvers, fields, boundaries).
 * **"Darkroom" Rendering:** Headless HDF5 export pipeline with a separate high-res rendering tool (supports Logarithmic Tone Mapping).
@@ -25,8 +24,11 @@ Inspired by [the work of Alexander Gustafsson](https://www.youtube.com/watch?v=V
 ```bash
 git clone [https://github.com/benbrandt14/BallSim](https://github.com/benbrandt14/BallSim)
 cd BallSim
-julia --project=. -e 'using Pkg; Pkg.instantiate()'
+# Option 1: Quick Start (Installs Julia if needed, instantiates, and tests)
+./setup.sh
 
+# Option 2: Manual Setup
+julia --project=. -e 'using Pkg; Pkg.instantiate()'
 ```
 
 ## Usage
@@ -63,12 +65,13 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
         }
     },
     "output": {
-        "mode": "interactive", // Options: "interactive", "render", "export"
+        "mode": "render", // Options: "interactive" (requires GLMakie), "render", "export"
         "res": 800,
         "fps": 60,
         "filename": "sandbox/simulation"
     }
 }
+```
 
 ### 2. The Darkroom (High-Res Visualization)
 
@@ -166,8 +169,7 @@ end
 
 I told Gemini to use a TDD workflow.
 
-* **Unit Tests:** `julia --project=. test/runtests.jl`
-* **Static Analysis:** The suite includes `JET.jl` to ensure Type Stability (no dynamic dispatch in physics loops).
+* **Unit Tests:** `julia --project=. -e 'using Pkg; Pkg.test()'`
 * **Hygiene:** `Aqua.jl` ensures no method ambiguities or stale dependencies.
 
 ## Project Structure
