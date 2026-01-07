@@ -8,7 +8,6 @@ using ProgressMeter
 
 # Visualization & IO
 using CairoMakie
-# using GLMakie
 using HDF5
 
 # Sub-modules
@@ -52,8 +51,12 @@ function run_simulation(config_path::String)
 end
 
 # --- Loop A: Interactive ---
-function _run_loop(sys, mode::Common.InteractiveMode, solver, boundary, gravity, duration)
-    error("InteractiveMode requires GLMakie. Please run `using GLMakie` before running the simulation.")
+function _run_loop(sys, mode::Common.OutputMode, solver, boundary, gravity, duration)
+    if mode isa Common.InteractiveMode
+        error("Interactive mode requires GLMakie. Please run `using GLMakie` in your script or REPL before starting the simulation.")
+    else
+        error("Unsupported OutputMode: $(typeof(mode))")
+    end
 end
 
 # --- Loop B: Export ---
