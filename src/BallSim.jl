@@ -19,16 +19,17 @@ include("Scenarios.jl")
 include("SimIO.jl")
 include("Vis.jl")
 include("Config.jl")
+include("CLI.jl")
 
-export Common, Scenarios, Shapes, Fields, Physics, SimIO, Vis, Config
+export Common, Scenarios, Shapes, Fields, Physics, SimIO, Vis, Config, CLI
 
 # ==============================================================================
 # THE DRIVER
 # ==============================================================================
 
-function run_simulation(config_path::String)
+function run_simulation(config_path::String, overrides::Dict{String, Any}=Dict{String, Any}())
     println("⚙️ Loading Configuration: $config_path")
-    cfg = Config.load_config(config_path)
+    cfg = Config.load_config(config_path, overrides)
     
     # 1. Setup Scenario (DYNAMIC NOW)
     scen = Config.create_scenario(cfg) # <--- Changed
@@ -53,7 +54,16 @@ end
 # --- Loop A: Interactive ---
 function _run_loop(sys, mode::Common.OutputMode, solver, boundary, gravity, duration)
     if mode isa Common.InteractiveMode
-        error("Interactive mode requires GLMakie. Please run `using GLMakie` in your script or REPL before starting the simulation.")
+        msg = """
+        Interactive mode requires GLMakie, which is not currently loaded.
+
+        To fix this:
+        1. Install/Load GLMakie: `using GLMakie`
+        2. OR Use a different mode via CLI:
+           ./run.sh --mode=export
+           ./run.sh --mode=render
+        """
+        error(msg)
     else
         error("Unsupported OutputMode: $(typeof(mode))")
     end
@@ -112,16 +122,23 @@ function _run_loop(sys, mode::Common.RenderMode, solver, boundary, gravity, dura
 end
 
 function command_line_main()
-    if length(ARGS) < 1
-        println("Using default 'config.json'...")
-        if isfile("config.json")
-            run_simulation("config.json")
-        else
-            error("config.json not found")
-        end
-    else
-        run_simulation(ARGS[1])
+    config_file, overrides = CLI.parse_args(ARGS)
+
+    if isempty(config_file)
+         # Should not happen given CLI.jl logic defaults to config.json
+         config_file = "config.json"
     end
+
+    if !isfile(config_file)
+        # If user didn't specify file but default missing
+        if config_file == "config.json"
+            error("Default 'config.json' not found. Please provide a config file.")
+        else
+            error("Config file not found: $config_file")
+        end
+    end
+
+    run_simulation(config_file, overrides)
 end
 
 end

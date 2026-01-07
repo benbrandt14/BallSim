@@ -78,54 +78,101 @@ end
 # LOADER
 # ==============================================================================
 
-function load_config(path::String)
+function recursive_merge!(base::AbstractDict, overrides::AbstractDict)
+    for (k, v) in overrides
+        if haskey(base, k) && base[k] isa AbstractDict && v isa AbstractDict
+            recursive_merge!(base[k], v)
+        else
+            base[k] = v
+        end
+    end
+    return base
+end
+
+function load_config(path::String, overrides::Dict{String, Any}=Dict{String, Any}())
     if !isfile(path) error("Config Error: File not found at $path") end
     json_string = read(path, String)
     data = try JSON3.read(json_string) catch e error("Invalid JSON") end
     
+    # Convert JSON3 object to Mutable Dict for merging
+    data_dict = Dict{String, Any}()
+    # A simple way to convert deeply is tricky with JSON3 without extra steps,
+    # but we can do a round trip or manual conversion.
+    # For simplicity, we assume shallow conversion is enough for top levels if we access them as Symbols?
+    # No, JSON3 uses Symbols by default for keys if not specified.
+    # Let's iterate and convert to String keys to match overrides which are String keys.
+
+    # Helper to convert JSON3 Object to Dict{String, Any}
+    function to_dict(obj)
+        if obj isa JSON3.Object
+            return Dict{String, Any}(string(k) => to_dict(v) for (k, v) in obj)
+        elseif obj isa AbstractArray
+            return [to_dict(x) for x in obj]
+        else
+            return obj
+        end
+    end
+
+    data_dict = to_dict(data)
+
+    # Merge overrides
+    if !isempty(overrides)
+        recursive_merge!(data_dict, overrides)
+    end
+
+    # Helper to access nested Dict with String keys
+    function get_nested(d, keys...)
+        curr = d
+        for k in keys
+            if !haskey(curr, k) return nothing end
+            curr = curr[k]
+        end
+        return curr
+    end
+
     # 1. Simulation / Scenario
-    if !haskey(data, :simulation) error("Missing 'simulation' block") end
-    sim = data.simulation
+    if !haskey(data_dict, "simulation") error("Missing 'simulation' block") end
+    sim = data_dict["simulation"]
     
-    scen_type = Symbol(get(sim, :type, "Spiral"))
-    scen_params = Dict{Symbol, Any}(k => v for (k, v) in get(sim, :params, Dict()))
+    scen_type = Symbol(get(sim, "type", "Spiral"))
+    scen_params = Dict{Symbol, Any}(Symbol(k) => v for (k, v) in get(sim, "params", Dict()))
     
     # Backward compat for top-level N
-    if haskey(sim, :N)
-        scen_params[:N] = validate_positive(sim.N, "simulation.N")
+    if haskey(sim, "N")
+        scen_params[:N] = validate_positive(sim["N"], "simulation.N")
     end
     
-    duration = validate_positive(Float64(get(sim, :duration, 10.0)), "simulation.duration")
+    duration = validate_positive(Float64(get(sim, "duration", 10.0)), "simulation.duration")
 
     # 2. Physics
-    if !haskey(data, :physics) error("Missing 'physics' block") end
-    phys = data.physics
-    dt = validate_positive(Float32(get(phys, :dt, 0.002)), "physics.dt")
-    solver = validate_choice(Symbol(get(phys, :solver, "CCD")), [:CCD], "physics.solver")
+    if !haskey(data_dict, "physics") error("Missing 'physics' block") end
+    phys = data_dict["physics"]
+    dt = validate_positive(Float32(get(phys, "dt", 0.002)), "physics.dt")
+    solver = validate_choice(Symbol(get(phys, "solver", "CCD")), [:CCD], "physics.solver")
     
-    solver_params = Dict{Symbol, Any}(k => v for (k, v) in get(phys, :solver_params, Dict()))
+    solver_params = Dict{Symbol, Any}(Symbol(k) => v for (k, v) in get(phys, "solver_params", Dict()))
 
     # Gravity
-    if !haskey(phys, :gravity) error("Missing 'physics.gravity'") end
-    grav = phys.gravity
-    grav_type = validate_choice(Symbol(get(grav, :type, "Zero")), [:Uniform, :Central, :Zero], "gravity.type")
-    grav_params = Dict{Symbol, Any}(k => v for (k, v) in get(grav, :params, Dict()))
+    if !haskey(phys, "gravity") error("Missing 'physics.gravity'") end
+    grav = phys["gravity"]
+    grav_type = validate_choice(Symbol(get(grav, "type", "Zero")), [:Uniform, :Central, :Zero], "gravity.type")
+    grav_params = Dict{Symbol, Any}(Symbol(k) => v for (k, v) in get(grav, "params", Dict()))
     validate_gravity_params(grav_type, grav_params)
     
     # Boundary
-    if !haskey(phys, :boundary) error("Missing 'physics.boundary'") end
-    bound = phys.boundary
-    bound_type = validate_choice(Symbol(get(bound, :type, "Circle")), [:Circle, :Box, :Ellipsoid, :InvertedCircle], "boundary.type")
-    bound_params = Dict{Symbol, Any}(k => v for (k, v) in get(bound, :params, Dict()))
+    if !haskey(phys, "boundary") error("Missing 'physics.boundary'") end
+    bound = phys["boundary"]
+    bound_type = validate_choice(Symbol(get(bound, "type", "Circle")), [:Circle, :Box, :Ellipsoid, :InvertedCircle], "boundary.type")
+    bound_params = Dict{Symbol, Any}(Symbol(k) => v for (k, v) in get(bound, "params", Dict()))
     validate_boundary_params(bound_type, bound_params)
     
     # 3. Output
-    if !haskey(data, :output) error("Missing 'output' block") end
-    out = data.output
-    mode = validate_choice(Symbol(get(out, :mode, "interactive")), [:interactive, :render, :export], "output.mode")
-    output_file = get(out, :filename, "sandbox/output")
-    res = validate_positive(get(out, :res, 800), "output.res")
-    fps = validate_positive(get(out, :fps, 60), "output.fps")
+    if !haskey(data_dict, "output") error("Missing 'output' block") end
+    out = data_dict["output"]
+    mode = validate_choice(Symbol(get(out, "mode", "interactive")), [:interactive, :render, :export], "output.mode")
+    output_file = get(out, "filename", "sandbox/output")
+    res = validate_positive(get(out, "res", 800), "output.res")
+    fps = validate_positive(get(out, "fps", 60), "output.fps")
 
     return SimulationConfig(
         scen_type, scen_params, duration,

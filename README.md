@@ -31,6 +31,39 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 ## Usage
 
+### 1. Running the Simulation
+
+You can run the simulation using the provided wrapper script:
+
+```bash
+./run.sh [config_file] [options]
+```
+
+Or directly via Julia:
+
+```bash
+julia --project=. sim.jl [config_file] [options]
+```
+
+**Options:**
+* `--mode=<interactive|render|export>`: Override output mode.
+* `--duration=<seconds>`: Override simulation duration.
+* `--N=<count>`: Override particle count.
+* `--config=<file>`: Specify configuration file (default: `config.json`).
+
+**Examples:**
+
+```bash
+# Run with default config
+./run.sh
+
+# Run in export mode for 5 seconds
+./run.sh --mode=export --duration=5.0
+
+# Run with custom config
+./run.sh my_config.json
+```
+
 **Configuration Structure (`config.json`):**
 
 ```json
