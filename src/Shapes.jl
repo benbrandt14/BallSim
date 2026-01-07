@@ -58,12 +58,34 @@ function Common.sdf(b::Box, p::SVector{2}, t)
 end
 
 function Common.normal(b::Box, p::SVector{2}, t)
-    # Numerical Gradient
-    ϵ = 1e-4f0
-    d0 = Common.sdf(b, p, t)
-    nx = Common.sdf(b, p + SVector(ϵ, 0f0), t) - d0
-    ny = Common.sdf(b, p + SVector(0f0, ϵ), t) - d0
-    return normalize(SVector(nx, ny))
+    # Analytical Gradient
+    # Replaces previous numerical gradient which had a syntax error (1e-4f0) and was slow.
+
+    w, h = b.width/2, b.height/2
+    d = abs.(p) .- SVector(w, h)
+
+    # Check max(d, 0) for positive components (outside box in that axis)
+    d_max_x = max(d[1], 0f0)
+    d_max_y = max(d[2], 0f0)
+
+    if d_max_x > 0 || d_max_y > 0
+        # Outside: normal matches direction of positive distance
+        # Normal = normalize(sign(p) * max(d, 0))
+
+        nx = copysign(d_max_x, p[1])
+        ny = copysign(d_max_y, p[2])
+
+        # Normalize
+        inv_len = 1.0f0 / sqrt(nx^2 + ny^2)
+        return SVector(nx * inv_len, ny * inv_len)
+    else
+        # Inside: normal is unit vector along max component of d (closest edge)
+        if d[1] > d[2]
+            return SVector(sign(p[1]), 0f0)
+        else
+            return SVector(0f0, sign(p[2]))
+        end
+    end
 end
 
 # --- Ellipsoid ---
