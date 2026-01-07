@@ -27,9 +27,8 @@ function step!(
     sys::Common.BallSystem{D, T, S}, 
     solver::CCDSolver, 
     boundary::Common.AbstractBoundary{D}, 
-    # FIX: Removed ::Function type constraint to allow callable structs (Fields)
-    gravity_func 
-) where {D, T, S}
+    gravity_func::G
+) where {D, T, S, G}
     
     dt_sub = solver.dt / solver.substeps
     epsilon = 0.00001f0 
