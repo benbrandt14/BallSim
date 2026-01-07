@@ -59,7 +59,7 @@ end
 
 function Common.normal(b::Box, p::SVector{2}, t)
     # Numerical Gradient
-    ϵ = 1e-4f0
+    ϵ = 1f-4
     d0 = Common.sdf(b, p, t)
     nx = Common.sdf(b, p + SVector(ϵ, 0f0), t) - d0
     ny = Common.sdf(b, p + SVector(0f0, ϵ), t) - d0
