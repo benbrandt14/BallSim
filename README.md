@@ -170,6 +170,21 @@ I told Gemini to use a TDD workflow.
 * **Static Analysis:** The suite includes `JET.jl` to ensure Type Stability (no dynamic dispatch in physics loops).
 * **Hygiene:** `Aqua.jl` ensures no method ambiguities or stale dependencies.
 
+## Debugging and Profiling
+
+BallSim includes a suite of interactive debug scripts in the `debug_scripts/` directory to verify physics correctness and measure performance.
+
+```bash
+# Verify analytical solutions (Bouncing, Gravity, Tunneling)
+julia debug_scripts/verify_analytical.jl
+
+# Profile runtime performance (FPS, Updates/sec)
+julia debug_scripts/profile_perf.jl
+
+# Check energy conservation and integration drift
+julia debug_scripts/check_energy.jl
+```
+
 ## Project Structure
 
 ```text
