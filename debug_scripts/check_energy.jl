@@ -30,7 +30,7 @@ function run_energy_test()
     println("--- Energy Conservation Test ---")
 
     # 1 particle bouncing
-    sys = BallSystem(1, 2, Float32)
+    sys = Common.BallSystem(1, 2, Float32)
     sys.data.active[1] = true
     sys.data.pos[1] = SVector(0.0f0, 0.0f0)
     sys.data.vel[1] = SVector(5.0f0, 5.0f0)

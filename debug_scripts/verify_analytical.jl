@@ -15,7 +15,7 @@ function run_wall_test()
     println("--- Test 1: Wall Bounce (1D) ---")
 
     # 1. Setup System: 1 Particle
-    sys = BallSystem(1, 2, Float32)
+    sys = Common.BallSystem(1, 2, Float32)
     sys.data.active[1] = true
     sys.data.pos[1] = SVector(0.0f0, 0.0f0)
     sys.data.vel[1] = SVector(10.0f0, 0.0f0) # 10 m/s to the right
@@ -61,7 +61,7 @@ function run_gravity_test()
     println("\n--- Test 2: Gravity Drop ---")
 
     # 1. Setup
-    sys = BallSystem(1, 2, Float32)
+    sys = Common.BallSystem(1, 2, Float32)
     sys.data.active[1] = true
     sys.data.pos[1] = SVector(0.0f0, 0.0f0)
     sys.data.vel[1] = SVector(0.0f0, 0.0f0)
@@ -111,7 +111,7 @@ function run_tunneling_test()
     println("\n--- Test 3: Tunneling Check ---")
 
     # High speed particle
-    sys = BallSystem(1, 2, Float32)
+    sys = Common.BallSystem(1, 2, Float32)
     sys.data.active[1] = true
     sys.data.pos[1] = SVector(0.0f0, 0.0f0)
 
