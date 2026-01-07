@@ -10,6 +10,7 @@ using BallSim
     include("unit/test_scenarios.jl")
     include("unit/test_shapes_extended.jl")
     include("test_shapes3d.jl")
+    include("test_vis_projection.jl")
     include("unit/test_fields.jl")
     include("unit/test_config.jl")
     include("unit/test_io.jl")

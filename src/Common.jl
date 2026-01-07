@@ -24,15 +24,19 @@ abstract type OutputMode end
 struct InteractiveMode <: OutputMode
     res::Int
     fps::Int
+    u::SVector{3, Float32}
+    v::SVector{3, Float32}
 end
-InteractiveMode(; res=800, fps=60) = InteractiveMode(res, fps)
+InteractiveMode(; res=800, fps=60, u=SVector(1f0, 0f0, 0f0), v=SVector(0f0, 1f0, 0f0)) = InteractiveMode(res, fps, u, v)
 
 struct RenderMode <: OutputMode
     outfile::String
     fps::Int
     res::Int
+    u::SVector{3, Float32}
+    v::SVector{3, Float32}
 end
-RenderMode(file; fps=60, res=1080) = RenderMode(file, fps, res)
+RenderMode(file; fps=60, res=1080, u=SVector(1f0, 0f0, 0f0), v=SVector(0f0, 1f0, 0f0)) = RenderMode(file, fps, res, u, v)
 
 struct ExportMode <: OutputMode
     outfile::String
