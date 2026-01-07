@@ -1,0 +1,33 @@
+{
+    "simulation": {
+        "type": "Spiral",
+        "params": { "N": 100, "mass_min": 1.0, "mass_max": 2.0 },
+        "duration": 1.0,
+        "dimensions": 3
+    },
+    "physics": {
+        "dt": 0.01,
+        "solver": "CCD",
+        "solver_params": {
+            "restitution": 0.9,
+            "substeps": 4
+        },
+        "gravity": {
+            "type": "Zero",
+            "params": {}
+        },
+        "boundary": {
+            "type": "Circle3D",
+            "params": {
+                "radius": 10.0
+            }
+        }
+    },
+    "output": {
+        "mode": "render",
+        "res": 400,
+        "fps": 30,
+        "filename": "sandbox/test_3d_circle",
+        "projection": "xy"
+    }
+}

@@ -55,7 +55,7 @@ function validate_choice(val, choices, name)
 end
 
 function validate_boundary_params(type, params)
-    if type in (:Circle, :InvertedCircle)
+    if type in (:Circle, :InvertedCircle, :Circle3D)
         if !haskey(params, :radius) error("Config Error: Boundary '$type' requires 'radius'.") end
         if params[:radius] <= 0 error("Config Error: 'radius' must be positive.") end
     elseif type == :Box
@@ -118,7 +118,7 @@ function load_config(path::String)
     # Boundary
     if !haskey(phys, :boundary) error("Missing 'physics.boundary'") end
     bound = phys.boundary
-    bound_type = validate_choice(Symbol(get(bound, :type, "Circle")), [:Circle, :Box, :Ellipsoid, :InvertedCircle], "boundary.type")
+    bound_type = validate_choice(Symbol(get(bound, :type, "Circle")), [:Circle, :Box, :Ellipsoid, :InvertedCircle, :Circle3D], "boundary.type")
     bound_params = Dict{Symbol, Any}(k => v for (k, v) in get(bound, :params, Dict()))
     validate_boundary_params(bound_type, bound_params)
     
