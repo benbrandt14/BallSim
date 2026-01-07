@@ -109,7 +109,7 @@ function _render_loop_generic(sys, mode, solver, boundary, gravity, duration)
         for _ in 1:steps_per_frame
             Physics.step!(sys, solver, boundary, gravity)
         end
-        Vis.compute_density!(grid, sys, 1.1, mode.u, mode.v)
+        Vis.compute_frame!(grid, sys, 1.1, mode.u, mode.v, mode.vis_config)
         notify(obs_grid)
         next!(prog)
     end
