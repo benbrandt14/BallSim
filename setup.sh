@@ -35,6 +35,6 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 # 3. Run Tests
 echo "Running tests..."
-julia --project=. test/runtests.jl
+julia --project=. -e 'using Pkg; Pkg.test()'
 
 echo "Setup complete!"

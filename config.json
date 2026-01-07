@@ -27,7 +27,7 @@
         }
     },
     "output": {
-        "mode": "interactive",
+        "mode": "render",
         "res": 800,
         "fps": 60,
         "filename": "sandbox/default_sim"
