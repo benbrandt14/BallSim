@@ -16,7 +16,7 @@ using BallSim.Physics
         # 2. Solver Setup
         solver = Physics.CCDSolver(0.01f0, 1.0f0, 8)
         boundary = Shapes.Box(10.0f0, 10.0f0)
-        gravity = (p,v,t) -> SVector(0f0, 0f0) # Vacuum
+        gravity = (p,v,m,t) -> SVector(0f0, 0f0) # Vacuum
         
         # 3. Measure Initial Energy
         E_init = 0.5f0 * norm(sys.data.vel[1])^2
@@ -42,7 +42,7 @@ using BallSim.Physics
         
         solver = Physics.CCDSolver(0.01f0, 1.0f0, 8)
         boundary = Shapes.Circle(1.0f0)
-        gravity = (p,v,t) -> SVector(0f0, 0f0)
+        gravity = (p,v,m,t) -> SVector(0f0, 0f0)
         
         # Step
         Physics.step!(sys, solver, boundary, gravity)

@@ -6,7 +6,7 @@ using LinearAlgebra
 abstract type AbstractField end
 
 # Functor interface: Field instances are callable
-# (field::MyField)(p, v, t) -> Force Vector
+# (field::MyField)(p, v, m, t) -> Force Vector
 
 # ==============================================================================
 # CONCRETE FIELDS
@@ -15,12 +15,12 @@ abstract type AbstractField end
 struct UniformField{D, T} <: AbstractField
     vector::SVector{D, T}
 end
-(f::UniformField)(p, v, t) = f.vector
+(f::UniformField)(p, v, m, t) = f.vector * m
 
 struct ViscousDrag{T} <: AbstractField
     k::T # Damping coefficient
 end
-(f::ViscousDrag)(p, v, t) = -f.k * v
+(f::ViscousDrag)(p, v, m, t) = -f.k * v
 
 struct CentralField{D, T} <: AbstractField
     center::SVector{D, T}
@@ -31,7 +31,7 @@ end
 CentralField(center, strength; mode=:attractor, cutoff=0.1f0) = 
     CentralField(center, strength, mode, cutoff)
 
-function (f::CentralField)(p, v, t)
+function (f::CentralField)(p, v, m, t)
     diff = f.center - p
     dist_sq = dot(diff, diff)
     dist = sqrt(dist_sq)
@@ -47,7 +47,8 @@ function (f::CentralField)(p, v, t)
     # Let's assume Inverse Square Law for "Fields"
     mag = f.strength / (denom^2)
     
-    return f.mode == :attractor ? (dir * mag) : -(dir * mag)
+    force_vec = f.mode == :attractor ? (dir * mag) : -(dir * mag)
+    return force_vec * m
 end
 
 # ==============================================================================
@@ -59,8 +60,8 @@ struct CombinedField{T <: Tuple} <: AbstractField
 end
 
 # Fast unrolling of the tuple sum
-function (c::CombinedField)(p, v, t)
-    sum(f -> f(p, v, t), c.fields)
+function (c::CombinedField)(p, v, m, t)
+    sum(f -> f(p, v, m, t), c.fields)
 end
 
 end

@@ -60,9 +60,10 @@ mutable struct BallSystem{D, T, S}
     function BallSystem(N::Int, D::Int, T::Type=Float32)
         pos = zeros(SVector{D, T}, N)
         vel = zeros(SVector{D, T}, N)
+        mass = ones(T, N)
         active = zeros(Bool, N)
 
-        data = StructArray((pos=pos, vel=vel, active=active))
+        data = StructArray((pos=pos, vel=vel, mass=mass, active=active))
         
         S = typeof(data)
         new{D, T, S}(data, zero(T), 0)
