@@ -84,17 +84,11 @@ end
 
 # --- Loop C: Render ---
 function _run_loop(sys, mode::Common.RenderMode, solver, boundary, gravity, duration)
-    # 2D Rendering
-    if sys isa Common.BallSystem{2}
-        _render_loop_2d(sys, mode, solver, boundary, gravity, duration)
-    elseif sys isa Common.BallSystem{3}
-        error("RenderMode not supported for 3D yet. Please use ExportMode.")
-    else
-        error("RenderMode not supported for this dimension.")
-    end
+    # Generic Rendering (handles 2D and 3D via projection)
+    _render_loop_generic(sys, mode, solver, boundary, gravity, duration)
 end
 
-function _render_loop_2d(sys, mode, solver, boundary, gravity, duration)
+function _render_loop_generic(sys, mode, solver, boundary, gravity, duration)
     fig = Figure(size=(mode.res, mode.res), backgroundcolor=:black)
     ax = Axis(fig[1,1], aspect=DataAspect(), backgroundcolor=:black)
     hidedecorations!(ax)
@@ -115,7 +109,7 @@ function _render_loop_2d(sys, mode, solver, boundary, gravity, duration)
         for _ in 1:steps_per_frame
             Physics.step!(sys, solver, boundary, gravity)
         end
-        Vis.compute_density!(grid, sys, 1.1)
+        Vis.compute_density!(grid, sys, 1.1, mode.u, mode.v)
         notify(obs_grid)
         next!(prog)
     end

@@ -66,10 +66,11 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
         }
     },
     "output": {
-        "mode": "export", // Use "export" for 3D. "render"/"interactive" (requires GLMakie) for 2D.
+        "mode": "render", // "interactive" (GLMakie), "render", "export"
         "res": 800,
         "fps": 60,
-        "filename": "sandbox/simulation"
+        "filename": "sandbox/simulation",
+        "projection": "xy" // Optional for 3D: "xy" (default), "xz", "yz", or custom { "u": [1,0,0], "v": [0,0,1] }
     }
 }
 ```

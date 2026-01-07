@@ -33,6 +33,7 @@ struct SimulationConfig
     output_file::String
     res::Int
     fps::Int
+    projection::Any # Can be String ("xy") or Dict (custom)
 end
 
 # ==============================================================================
@@ -128,13 +129,14 @@ function load_config(path::String)
     output_file = get(out, :filename, "sandbox/output")
     res = validate_positive(get(out, :res, 800), "output.res")
     fps = validate_positive(get(out, :fps, 60), "output.fps")
+    projection = get(out, :projection, "xy")
 
     return SimulationConfig(
         scen_type, scen_params, duration, dimensions,
         dt, solver, solver_params,
         grav_type, grav_params,
         bound_type, bound_params,
-        mode, output_file, res, fps
+        mode, output_file, res, fps, projection
     )
 end
 
@@ -229,13 +231,33 @@ function create_gravity(cfg::SimulationConfig)
     end
 end
 
+function parse_projection(p)
+    if p == "xy"
+        return (SVector(1f0, 0f0, 0f0), SVector(0f0, 1f0, 0f0))
+    elseif p == "xz"
+        return (SVector(1f0, 0f0, 0f0), SVector(0f0, 0f0, 1f0))
+    elseif p == "yz"
+        return (SVector(0f0, 1f0, 0f0), SVector(0f0, 0f0, 1f0))
+    elseif p isa AbstractDict && haskey(p, :u) && haskey(p, :v)
+        u = p[:u]
+        v = p[:v]
+        return (SVector{3, Float32}(u...), SVector{3, Float32}(v...))
+    else
+        # Default fallback or error?
+        # If 3D but no valid projection, default to xy
+        return (SVector(1f0, 0f0, 0f0), SVector(0f0, 1f0, 0f0))
+    end
+end
+
 function create_mode(cfg::SimulationConfig)
+    u, v = parse_projection(cfg.projection)
+
     if cfg.mode == :interactive
-        return Common.InteractiveMode(res=cfg.res, fps=cfg.fps)
+        return Common.InteractiveMode(res=cfg.res, fps=cfg.fps, u=u, v=v)
     elseif cfg.mode == :render
         mkpath(dirname(cfg.output_file))
         fname = endswith(cfg.output_file, ".mp4") ? cfg.output_file : "$(cfg.output_file).mp4"
-        return Common.RenderMode(fname, fps=cfg.fps, res=cfg.res)
+        return Common.RenderMode(fname, fps=cfg.fps, res=cfg.res, u=u, v=v)
     elseif cfg.mode == :export
         mkpath(dirname(cfg.output_file))
         fname = endswith(cfg.output_file, ".h5") ? cfg.output_file : "$(cfg.output_file).h5"
