@@ -19,6 +19,7 @@ Inspired by [the work of Alexander Gustafsson](https://www.youtube.com/watch?v=V
 * **Modular Architecture:** Physics, Geometry, and Rendering are strictly decoupled.
 * **Declarative Configuration:** Full simulation control via JSON files (solvers, fields, boundaries).
 * **"Darkroom" Rendering:** Headless HDF5 export pipeline with a separate high-res rendering tool (supports Logarithmic Tone Mapping).
+* **3D Support:** Full 3D simulation capabilities with configurable 2D visualization projection (XY, XZ, YZ) and "Depth" visualization mode.
 * **Extensible:** Easy interfaces for defining new Shapes, Force Fields, and Scenarios.
 
 ## Installation
@@ -98,12 +99,21 @@ julia --project=. sim.jl my_config.json
             }
         }
     },
+    // Example 3D Box
+    // "boundary": {
+    //   "type": "Box",
+    //   "params": { "width": 10.0, "height": 10.0, "depth": 10.0 }
+    // },
     "output": {
         "mode": "render",
         "res": 800,
         "fps": 60,
         "filename": "sandbox/simulation",
-        "projection": "xy"
+        "projection": "xy",
+        "visualization": {
+            "mode": "depth",
+            "aggregation": "max"
+        }
     }
 }
 ```
