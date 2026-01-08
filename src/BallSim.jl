@@ -29,9 +29,12 @@ export Common, Scenarios, Shapes, Fields, Physics, SimIO, Vis, Config
 function run_simulation(config_path::String)
     println("⚙️ Loading Configuration: $config_path")
     cfg = Config.load_config(config_path)
-    
+    run_simulation(cfg)
+end
+
+function run_simulation(cfg::Config.SimulationConfig)
     # 1. Setup Scenario (DYNAMIC NOW)
-    scen = Config.create_scenario(cfg) # <--- Changed
+    scen = Config.create_scenario(cfg)
     sys = Common.setup_system(scen)
     
     # 2. Build Physics from Config

@@ -67,19 +67,21 @@ function step!(
 ) where {D, T, S, G}
     
     dt_sub = solver.dt / solver.substeps
-    epsilon = 0.00001f0 
+    epsilon = 0.00001f0
+    restitution_term = 1.0f0 + solver.restitution
     
     Threads.@threads for i in 1:length(sys.data.pos)
         @inbounds if sys.data.active[i]
             p = sys.data.pos[i]
             v = sys.data.vel[i]
             m = sys.data.mass[i]
+            inv_m = 1.0f0 / m
             t_local = sys.t
 
             for _ in 1:solver.substeps
                 # 1. Integration
                 f = gravity_func(p, v, m, t_local)
-                a = f / m
+                a = f * inv_m
                 v_new = v + a * dt_sub
                 p_new = p + v_new * dt_sub
                 
@@ -92,8 +94,7 @@ function step!(
                     
                     v_normal = dot(v_new, n)
                     if v_normal > 0
-                        r = 1.0f0 + solver.restitution
-                        v_new = v_new - r * v_normal * n
+                        v_new = v_new - restitution_term * v_normal * n
                         # Count collision
                         @inbounds sys.data.collisions[i] += 1
                     end
