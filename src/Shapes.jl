@@ -47,6 +47,25 @@ end
 # ==============================================================================
 
 # --- Circle ---
+"""
+    sdf(b::Circle, p::SVector{2}, t)
+
+Signed Distance Function for a 2D Circle.
+Returns negative if inside, positive if outside.
+
+# Example
+```jldoctest
+julia> using BallSim, StaticArrays
+
+julia> c = Shapes.Circle(1.0f0);
+
+julia> Common.sdf(c, SVector(0.0f0, 0.0f0), 0.0f0)
+-1.0f0
+
+julia> Common.sdf(c, SVector(2.0f0, 0.0f0), 0.0f0)
+1.0f0
+```
+"""
 function Common.sdf(b::Circle, p::SVector{2}, t)
     return norm(p) - b.radius
 end
