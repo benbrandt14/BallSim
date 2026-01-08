@@ -34,6 +34,36 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 ## Usage
 
+### UI Configurator (Recommended)
+
+A web-based UI is available for configuring and running simulations.
+
+1.  **Setup the UI environment:**
+    ```bash
+    julia tools/ui/setup_ui.jl
+    ```
+
+2.  **Run the App:**
+    ```bash
+    julia --project=tools/ui tools/ui/app.jl
+    ```
+
+3.  Open `http://localhost:8000` (or the provided URL) in your browser.
+
+### Command Line
+
+Run the simulation using the default `config.json`:
+
+```bash
+julia --project=. sim.jl
+```
+
+Or specify a custom configuration file:
+
+```bash
+julia --project=. sim.jl my_config.json
+```
+
 **Configuration Structure (`config.json`):**
 
 ```json
