@@ -51,7 +51,6 @@ function step!(
                 dist = Common.sdf(boundary, p_new, t_local)
                 
                 if dist > 0
-                    sys.data.collisions[i] += 1
                     n = Common.normal(boundary, p_new, t_local)
                     p_new = p_new - n * (dist + epsilon)
                     
