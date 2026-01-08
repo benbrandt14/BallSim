@@ -12,24 +12,6 @@ abstract type AbstractField end
 # CONCRETE FIELDS
 # ==============================================================================
 
-"""
-    UniformField{D, T}
-
-A constant force field (e.g., gravity) applied uniformly to all particles.
-F = m * vector
-
-# Example
-```jldoctest
-julia> using BallSim, StaticArrays
-
-julia> g = Fields.UniformField(SVector(0.0f0, -9.8f0));
-
-julia> g(SVector(0f0,0f0), SVector(0f0,0f0), 1.0f0, 0.0f0)
-2-element SVector{2, Float32} with indices SOneTo(2):
-  0.0
- -9.8
-```
-"""
 struct UniformField{D, T} <: AbstractField
     vector::SVector{D, T}
 end

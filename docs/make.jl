@@ -8,7 +8,7 @@ makedocs(;
     authors="Ben Brandt <benbrandt14@gmail.com> and contributors",
     sitename="BallSim.jl",
     format=Documenter.HTML(;
-        canonical="https://benbrandt14.github.io/BallSim.jl",
+        canonical="https://github.com/benbrandt/BallSim.jl",
         edit_link="main",
         assets=String[],
     ),
@@ -19,6 +19,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/benbrandt14/BallSim.jl",
+    repo="github.com/benbrandt/BallSim.jl",
     devbranch="main",
 )

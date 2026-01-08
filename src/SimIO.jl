@@ -2,7 +2,6 @@ module SimIO
 
 using ..Common
 using HDF5
-using WriteVTK
 using StaticArrays
 using StructArrays
 
@@ -65,56 +64,6 @@ function load_frame!(sys::Common.BallSystem{D, T}, file::HDF5.File, index::Int) 
     sys.data.pos .= reinterpret(reshape, SVector{D, T}, pos_mat)
     sys.data.vel .= reinterpret(reshape, SVector{D, T}, vel_mat)
     sys.data.active .= active_vec
-end
-
-"""
-    save_vtk(prefix::String, index::Int, sys::BallSystem)
-
-Saves the current state to a VTK file (UnstructuredGrid .vtu by default).
-"""
-function save_vtk(prefix::String, index::Int, sys::Common.BallSystem{D, T}) where {D, T}
-    # Clean prefix
-    if endswith(prefix, ".vtp") || endswith(prefix, ".vtu")
-        prefix = prefix[1:end-4]
-    end
-
-    filename = "$(prefix)_$(lpad(index, 5, '0'))"
-
-    # 1. Prepare Points (3 x N)
-    # WriteVTK expects standard Array, and preferably 3D points
-    pos_flat = reinterpret(reshape, T, sys.data.pos)
-    N = length(sys.data.pos)
-
-    if D == 2
-        points = zeros(T, 3, N)
-        points[1:2, :] .= pos_flat
-    else
-        points = Array(pos_flat)
-    end
-
-    # 2. Define Cells (Vertices)
-    # Using VTK_VERTEX to define each point as a cell
-    cells = [MeshCell(VTKCellTypes.VTK_VERTEX, [i]) for i in 1:N]
-
-    # 3. Create Grid
-    vtk = vtk_grid(filename, points, cells)
-
-    # 4. Add Data
-    vel_flat = reinterpret(reshape, T, sys.data.vel)
-    if D == 2
-        vel_3d = zeros(T, 3, N)
-        vel_3d[1:2, :] .= vel_flat
-        vtk["Velocity"] = vel_3d
-    else
-        vtk["Velocity"] = Array(vel_flat)
-    end
-
-    vtk["Mass"] = sys.data.mass
-    vtk["Active"] = Int.(collect(sys.data.active))
-    vtk["Collisions"] = sys.data.collisions
-    vtk["Time", VTKFieldData()] = sys.t
-
-    return vtk_save(vtk)
 end
 
 end

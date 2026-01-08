@@ -19,12 +19,6 @@ function get_default_solver end
 # 2. OUTPUT MODES
 # ==============================================================================
 
-struct VisualizationConfig
-    mode::Symbol
-    aggregation::Symbol
-end
-VisualizationConfig(; mode=:density, aggregation=:sum) = VisualizationConfig(mode, aggregation)
-
 abstract type OutputMode end
 
 struct InteractiveMode <: OutputMode
@@ -32,9 +26,8 @@ struct InteractiveMode <: OutputMode
     fps::Int
     u::SVector{3, Float32}
     v::SVector{3, Float32}
-    vis_config::VisualizationConfig
 end
-InteractiveMode(; res=800, fps=60, u=SVector(1f0, 0f0, 0f0), v=SVector(0f0, 1f0, 0f0), vis_config=VisualizationConfig()) = InteractiveMode(res, fps, u, v, vis_config)
+InteractiveMode(; res=800, fps=60, u=SVector(1f0, 0f0, 0f0), v=SVector(0f0, 1f0, 0f0)) = InteractiveMode(res, fps, u, v)
 
 struct RenderMode <: OutputMode
     outfile::String
@@ -42,9 +35,8 @@ struct RenderMode <: OutputMode
     res::Int
     u::SVector{3, Float32}
     v::SVector{3, Float32}
-    vis_config::VisualizationConfig
 end
-RenderMode(file; fps=60, res=1080, u=SVector(1f0, 0f0, 0f0), v=SVector(0f0, 1f0, 0f0), vis_config=VisualizationConfig()) = RenderMode(file, fps, res, u, v, vis_config)
+RenderMode(file; fps=60, res=1080, u=SVector(1f0, 0f0, 0f0), v=SVector(0f0, 1f0, 0f0)) = RenderMode(file, fps, res, u, v)
 
 struct ExportMode <: OutputMode
     outfile::String
@@ -74,9 +66,8 @@ mutable struct BallSystem{D, T, S}
         vel = zeros(SVector{D, T}, N)
         mass = ones(T, N)
         active = zeros(Bool, N)
-        collisions = zeros(Int, N)
 
-        data = StructArray((pos=pos, vel=vel, mass=mass, active=active, collisions=collisions))
+        data = StructArray((pos=pos, vel=vel, mass=mass, active=active))
         
         S = typeof(data)
         new{D, T, S}(data, zero(T), 0)

@@ -21,40 +21,7 @@ end
 """
     step!(sys, solver, boundary, gravity_func)
 
-The main physics loop. Updates particle positions and velocities based on:
-1.  Gravity / Force Fields
-2.  Explicit Euler Integration
-3.  Continuous Collision Detection (approximate via substeps) with the Boundary.
-
-# Arguments
-- `sys`: The `BallSystem` containing particle data.
-- `solver`: The `CCDSolver` configuration (dt, restitution, substeps).
-- `boundary`: The geometric boundary (e.g., Circle, Box).
-- `gravity_func`: A callable `f(p, v, m, t)` returning force vector.
-
-# Example
-```jldoctest
-julia> using BallSim, StaticArrays
-
-julia> sys = Common.BallSystem(1, 2); # 1 particle, 2D
-
-julia> sys.data.pos[1] = SVector(0.0f0, 0.0f0);
-
-julia> sys.data.vel[1] = SVector(1.0f0, 0.0f0);
-
-julia> sys.data.active[1] = true;
-
-julia> solver = Physics.CCDSolver(0.1f0, 1.0f0, 1);
-
-julia> boundary = Shapes.Circle(10.0f0);
-
-julia> gravity = (p, v, m, t) -> SVector(0.0f0, -9.8f0); # Simple gravity
-
-julia> Physics.step!(sys, solver, boundary, gravity);
-
-julia> sys.t ≈ 0.1f0
-true
-```
+The main physics loop.
 """
 function step!(
     sys::Common.BallSystem{D, T, S}, 
@@ -91,8 +58,6 @@ function step!(
                     if v_normal > 0
                         r = 1.0f0 + solver.restitution
                         v_new = v_new - r * v_normal * n
-                        # Count collision
-                        @inbounds sys.data.collisions[i] += 1
                     end
                 end
                 
