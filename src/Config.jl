@@ -34,6 +34,7 @@ struct SimulationConfig
     res::Int
     fps::Int
     projection::Any # Can be String ("xy") or Dict (custom)
+    vis_config::Common.VisualizationConfig
 end
 
 # ==============================================================================
@@ -131,12 +132,17 @@ function load_config(path::String)
     fps = validate_positive(get(out, :fps, 60), "output.fps")
     projection = get(out, :projection, "xy")
 
+    vis_data = get(out, :visualization, Dict())
+    v_mode = Symbol(get(vis_data, :mode, "density"))
+    v_agg = Symbol(get(vis_data, :aggregation, "sum"))
+    vis_config = Common.VisualizationConfig(mode=v_mode, aggregation=v_agg)
+
     return SimulationConfig(
         scen_type, scen_params, duration, dimensions,
         dt, solver, solver_params,
         grav_type, grav_params,
         bound_type, bound_params,
-        mode, output_file, res, fps, projection
+        mode, output_file, res, fps, projection, vis_config
     )
 end
 
@@ -253,11 +259,11 @@ function create_mode(cfg::SimulationConfig)
     u, v = parse_projection(cfg.projection)
 
     if cfg.mode == :interactive
-        return Common.InteractiveMode(res=cfg.res, fps=cfg.fps, u=u, v=v)
+        return Common.InteractiveMode(res=cfg.res, fps=cfg.fps, u=u, v=v, vis_config=cfg.vis_config)
     elseif cfg.mode == :render
         mkpath(dirname(cfg.output_file))
         fname = endswith(cfg.output_file, ".mp4") ? cfg.output_file : "$(cfg.output_file).mp4"
-        return Common.RenderMode(fname, fps=cfg.fps, res=cfg.res, u=u, v=v)
+        return Common.RenderMode(fname, fps=cfg.fps, res=cfg.res, u=u, v=v, vis_config=cfg.vis_config)
     elseif cfg.mode == :export
         mkpath(dirname(cfg.output_file))
         fname = cfg.output_file

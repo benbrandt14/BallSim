@@ -4,59 +4,65 @@ using ..Common
 using StaticArrays
 using LinearAlgebra
 
-# 2D Version (Passthrough u/v)
-function compute_density!(grid::Matrix{Float32}, sys::Common.BallSystem{2, T, S}, limit::Float64, u, v) where {T, S}
-    compute_density!(grid, sys, limit)
-end
-
-function compute_density!(grid::Matrix{Float32}, sys::Common.BallSystem{2, T, S}, limit::Float64) where {T, S}
-    fill!(grid, 0.0f0)
-    res_x, res_y = size(grid)
-    
-    scale_x = res_x / (2 * limit)
-    scale_y = res_y / (2 * limit)
-    offset_x = limit
-    offset_y = limit
-    
-    Threads.@threads for i in 1:length(sys.data.pos)
-        @inbounds if sys.data.active[i]
-            p = sys.data.pos[i]
-            gx = floor(Int, (p[1] + offset_x) * scale_x) + 1
-            gy = floor(Int, (p[2] + offset_y) * scale_y) + 1
-            
-            if 1 <= gx <= res_x && 1 <= gy <= res_y
-                grid[gx, gy] += 1.0f0
-            end
-        end
+function resolve_extractor(cfg::Common.VisualizationConfig)
+    if cfg.mode == :density
+        return (sys, i) -> 1.0f0
+    elseif cfg.mode == :mass
+        return (sys, i) -> sys.data.mass[i]
+    elseif cfg.mode == :velocity
+        return (sys, i) -> norm(sys.data.vel[i])
+    elseif cfg.mode == :collisions
+        return (sys, i) -> Float32(sys.data.collisions[i])
+    else
+        return (sys, i) -> 1.0f0
     end
 end
 
-# 3D Version (Projection)
-function compute_density!(grid::Matrix{Float32}, sys::Common.BallSystem{3, T, S}, limit::Float64, u::SVector{3, Float32}, v::SVector{3, Float32}) where {T, S}
+"""
+    compute_frame!(grid, sys, limit, u, v, cfg)
+
+Computes the visualization frame based on config.
+Projects 3D particles if necessary.
+"""
+function compute_frame!(grid::Matrix{Float32}, sys::Common.BallSystem{D, T, S}, limit::Float64, u, v, cfg::Common.VisualizationConfig) where {D, T, S}
     fill!(grid, 0.0f0)
     res_x, res_y = size(grid)
-
+    
     scale_x = res_x / (2 * limit)
     scale_y = res_y / (2 * limit)
     offset_x = limit
     offset_y = limit
+    
+    extractor = resolve_extractor(cfg)
 
+    # We use a naive racey update for performance in visualization.
+    # For exact results, one would need atomics or reduction.
     Threads.@threads for i in 1:length(sys.data.pos)
         @inbounds if sys.data.active[i]
-            p3 = sys.data.pos[i]
-
-            # Project: P2D = (P . u, P . v)
-            px = dot(p3, u)
-            py = dot(p3, v)
+            val = extractor(sys, i)
+            
+            p = sys.data.pos[i]
+            if D == 3
+                px = dot(p, u)
+                py = dot(p, v)
+            else
+                px = p[1]
+                py = p[2]
+            end
 
             gx = floor(Int, (px + offset_x) * scale_x) + 1
             gy = floor(Int, (py + offset_y) * scale_y) + 1
 
             if 1 <= gx <= res_x && 1 <= gy <= res_y
-                grid[gx, gy] += 1.0f0
+                grid[gx, gy] += val
             end
         end
     end
+end
+
+# Alias for backward compatibility if needed, though we will update call sites.
+function compute_density!(grid::Matrix{Float32}, sys::Common.BallSystem{D, T, S}, limit::Float64, u, v) where {D, T, S}
+    compute_frame!(grid, sys, limit, u, v, Common.VisualizationConfig(mode=:density, aggregation=:sum))
 end
 
 end
