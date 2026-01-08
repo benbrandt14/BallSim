@@ -4,17 +4,21 @@ using ..Common
 using StaticArrays
 using LinearAlgebra
 
-@inline function get_particle_value(sys::Common.BallSystem{D, T, S}, i::Int, mode::Symbol) where {D, T, S}
-    if mode == :density
-        return 1.0f0
-    elseif mode == :mass
-        return Float32(sys.data.mass[i])
+# Accessors
+get_density(sys, i) = 1.0f0
+get_mass(sys, i) = Float32(sys.data.mass[i])
+get_velocity(sys, i) = norm(sys.data.vel[i])
+get_collisions(sys, i) = Float32(sys.data.collisions[i])
+
+function resolve_extractor(mode::Symbol)
+    if mode == :mass
+        return get_mass
     elseif mode == :velocity
-        return norm(sys.data.vel[i])
+        return get_velocity
     elseif mode == :collisions
-        return Float32(sys.data.collisions[i])
+        return get_collisions
     else
-        return 1.0f0 # Fallback to density
+        return get_density
     end
 end
 
@@ -32,6 +36,8 @@ function compute_frame!(grid::Matrix{Float32}, sys::Common.BallSystem{2, T, S}, 
     offset_x = limit
     offset_y = limit
     
+    extractor = resolve_extractor(config.mode)
+
     Threads.@threads for i in 1:length(sys.data.pos)
         @inbounds if sys.data.active[i]
             p = sys.data.pos[i]
@@ -39,7 +45,7 @@ function compute_frame!(grid::Matrix{Float32}, sys::Common.BallSystem{2, T, S}, 
             gy = floor(Int, (p[2] + offset_y) * scale_y) + 1
             
             if 1 <= gx <= res_x && 1 <= gy <= res_y
-                val = get_particle_value(sys, i, config.mode)
+                val = extractor(sys, i)
                 grid[gx, gy] += val
             end
         end
@@ -56,6 +62,8 @@ function compute_frame!(grid::Matrix{Float32}, sys::Common.BallSystem{3, T, S}, 
     offset_x = limit
     offset_y = limit
 
+    extractor = resolve_extractor(config.mode)
+
     Threads.@threads for i in 1:length(sys.data.pos)
         @inbounds if sys.data.active[i]
             p3 = sys.data.pos[i]
@@ -68,7 +76,7 @@ function compute_frame!(grid::Matrix{Float32}, sys::Common.BallSystem{3, T, S}, 
             gy = floor(Int, (py + offset_y) * scale_y) + 1
 
             if 1 <= gx <= res_x && 1 <= gy <= res_y
-                val = get_particle_value(sys, i, config.mode)
+                val = extractor(sys, i)
                 grid[gx, gy] += val
             end
         end
