@@ -54,6 +54,9 @@ julia> Physics.step!(sys, solver, boundary, gravity);
 
 julia> sys.t ≈ 0.1f0
 true
+
+julia> sys.data.pos[1][2] < 0.0f0 # Moved down due to gravity
+true
 ```
 """
 function step!(
