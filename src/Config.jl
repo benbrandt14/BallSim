@@ -131,24 +131,12 @@ function load_config(path::String)
     fps = validate_positive(get(out, :fps, 60), "output.fps")
     projection = get(out, :projection, "xy")
 
-    # Visualization Options
-    vis_data = get(out, :visualization, Dict())
-    vis_mode = Symbol(get(vis_data, :mode, "density"))
-    vis_agg = Symbol(get(vis_data, :aggregation, "sum"))
-
-    # Pass vis options through to mode factory by encoding in projection or separate field?
-    # SimulationConfig doesn't have a field for visualization options, but we can stick it in projection or change SimulationConfig.
-    # Actually, the task requires updating the config parser. I should update SimulationConfig too.
-    # But for minimal intrusion, I'll return it as part of the "mode" construction logic later.
-    # Wait, create_mode(cfg) is called later. I need to store these options in SimulationConfig.
-
     return SimulationConfig(
         scen_type, scen_params, duration, dimensions,
         dt, solver, solver_params,
         grav_type, grav_params,
         bound_type, bound_params,
-        mode, output_file, res, fps,
-        Dict(:projection => projection, :vis_mode => vis_mode, :vis_agg => vis_agg) # Hack: bundling into one field to avoid changing struct too much if possible, but let's do it properly.
+        mode, output_file, res, fps, projection
     )
 end
 
@@ -262,19 +250,14 @@ function parse_projection(p)
 end
 
 function create_mode(cfg::SimulationConfig)
-    # Extract bundle
-    bundle = cfg.projection
-    proj = bundle[:projection]
-    vis_config = Common.VisualizationConfig(mode=bundle[:vis_mode], agg=bundle[:vis_agg])
-
-    u, v = parse_projection(proj)
+    u, v = parse_projection(cfg.projection)
 
     if cfg.mode == :interactive
-        return Common.InteractiveMode(res=cfg.res, fps=cfg.fps, u=u, v=v, vis_config=vis_config)
+        return Common.InteractiveMode(res=cfg.res, fps=cfg.fps, u=u, v=v)
     elseif cfg.mode == :render
         mkpath(dirname(cfg.output_file))
         fname = endswith(cfg.output_file, ".mp4") ? cfg.output_file : "$(cfg.output_file).mp4"
-        return Common.RenderMode(fname, fps=cfg.fps, res=cfg.res, u=u, v=v, vis_config=vis_config)
+        return Common.RenderMode(fname, fps=cfg.fps, res=cfg.res, u=u, v=v)
     elseif cfg.mode == :export
         mkpath(dirname(cfg.output_file))
         fname = cfg.output_file
