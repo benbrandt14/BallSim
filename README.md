@@ -33,6 +33,23 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 ## Usage
 
+### 1. GUI Configurator
+
+A web-based UI is available to configure and run simulations interactively.
+
+**First-time setup:**
+```bash
+julia tools/ui/setup_ui.jl
+```
+
+**Run:**
+```bash
+julia --project=tools/ui tools/ui/app.jl
+```
+Open your browser to `http://localhost:8000`.
+
+### 2. Command Line Simulation
+
 **Configuration Structure (`config.json`):**
 
 ```json
@@ -75,7 +92,7 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 }
 ```
 
-### 2. The Darkroom (High-Res Visualization)
+### 3. The Darkroom (High-Res Visualization)
 
 Turn raw HDF5 data into art using the standalone renderer tool.
 

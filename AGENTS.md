@@ -33,6 +33,20 @@ julia --project=. -e 'using Pkg; Pkg.test()'
 julia --project=. sim.jl
 ```
 
+### Running the Configurator UI
+A web-based configurator is available in `tools/ui/`.
+
+**First-time setup:**
+```bash
+julia tools/ui/setup_ui.jl
+```
+
+**Run:**
+```bash
+julia --project=tools/ui tools/ui/app.jl
+```
+This tool allows you to visually configure scenarios and launch simulations.
+
 ### Adding Dependencies
 When adding a new package:
 ```julia
