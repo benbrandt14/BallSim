@@ -40,39 +40,39 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 ```json
 {
     "simulation": {
-        "type": "Spiral", // Extendable via Scenarios.jl
+        "type": "Spiral",
         "params": { "N": 50000 },
         "duration": 10.0,
-        "dimensions": 3  // Optional: 2 (default) or 3
+        "dimensions": 3
     },
     "physics": {
         "dt": 0.002,
         "solver": "CCD",
         "solver_params": {
-            "restitution": 0.5, // 1.0 = Bouncy, 0.0 = Sticky
-            "substeps": 8       // Higher = More precise collision
+            "restitution": 0.5,
+            "substeps": 8
         },
         "gravity": {
-            "type": "Central",  // Options: "Central", "Uniform", "Zero"
+            "type": "Central",
             "params": {
                 "strength": 20.0,
                 "mode": "attractor",
-                "center": [0.0, 0.0, 0.0] // 3D Center if dimensions=3
+                "center": [0.0, 0.0, 0.0]
             }
         },
         "boundary": {
-            "type": "Circle", // Options: "Circle" (2D/3D), "Box" (2D), "Ellipsoid" (2D), "InvertedCircle"
+            "type": "Circle",
             "params": {
                 "radius": 1.0
             }
         }
     },
     "output": {
-        "mode": "render", // "interactive" (GLMakie), "render", "export"
+        "mode": "render",
         "res": 800,
         "fps": 60,
         "filename": "sandbox/simulation",
-        "projection": "xy" // Optional for 3D: "xy" (default), "xz", "yz", or custom { "u": [1,0,0], "v": [0,0,1] }
+        "projection": "xy"
     }
 }
 ```
@@ -100,7 +100,7 @@ Set `mode` to `"export"` and use a filename with `.vtu` or `.vtp` extension.
 ```json
     "output": {
         "mode": "export",
-        "filename": "sandbox/simulation.vtu", // Extension determines format (.vtu/.vtp vs .h5)
+        "filename": "sandbox/simulation.vtu",
         "fps": 60
     }
 ```
@@ -194,6 +194,8 @@ I told Gemini to use a TDD workflow.
 
 * **Unit Tests:** `julia --project=. -e 'using Pkg; Pkg.test()'`
 * **Hygiene:** `Aqua.jl` ensures no method ambiguities or stale dependencies.
+
+See `AGENTS.md` for more detailed workflow instructions and coding standards.
 
 ## Project Structure
 
