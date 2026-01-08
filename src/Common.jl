@@ -66,8 +66,9 @@ mutable struct BallSystem{D, T, S}
         vel = zeros(SVector{D, T}, N)
         mass = ones(T, N)
         active = zeros(Bool, N)
+        collisions = zeros(Int, N)
 
-        data = StructArray((pos=pos, vel=vel, mass=mass, active=active))
+        data = StructArray((pos=pos, vel=vel, mass=mass, active=active, collisions=collisions))
         
         S = typeof(data)
         new{D, T, S}(data, zero(T), 0)

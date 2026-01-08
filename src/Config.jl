@@ -260,7 +260,11 @@ function create_mode(cfg::SimulationConfig)
         return Common.RenderMode(fname, fps=cfg.fps, res=cfg.res, u=u, v=v)
     elseif cfg.mode == :export
         mkpath(dirname(cfg.output_file))
-        fname = endswith(cfg.output_file, ".h5") ? cfg.output_file : "$(cfg.output_file).h5"
+        fname = cfg.output_file
+        # Default to h5 if no known extension
+        if !endswith(fname, ".h5") && !endswith(fname, ".vtp") && !endswith(fname, ".vtu")
+            fname = "$(fname).h5"
+        end
         return Common.ExportMode(fname, interval=10)
     else
         error("Unknown Mode: $(cfg.mode)")
