@@ -64,6 +64,9 @@ julia> Common.sdf(c, SVector(0.0f0, 0.0f0), 0.0f0)
 
 julia> Common.sdf(c, SVector(2.0f0, 0.0f0), 0.0f0)
 1.0f0
+
+julia> Common.sdf(c, SVector(1.0f0, 0.0f0), 0.0f0)
+0.0f0
 ```
 """
 function Common.sdf(b::Circle, p::SVector{2}, t)

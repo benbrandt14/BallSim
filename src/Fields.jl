@@ -24,10 +24,8 @@ julia> using BallSim, StaticArrays
 
 julia> g = Fields.UniformField(SVector(0.0f0, -9.8f0));
 
-julia> g(SVector(0f0,0f0), SVector(0f0,0f0), 1.0f0, 0.0f0)
-2-element SVector{2, Float32} with indices SOneTo(2):
-  0.0
- -9.8
+julia> g(SVector(0f0,0f0), SVector(0f0,0f0), 1.0f0, 0.0f0) == SVector(0.0f0, -9.8f0)
+true
 ```
 """
 struct UniformField{D, T} <: AbstractField
