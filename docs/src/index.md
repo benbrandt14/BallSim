@@ -15,5 +15,5 @@ julia> using BallSim
 ## Reference
 
 ```@autodocs
-Modules = [BallSim, BallSim.Common, BallSim.Shapes, BallSim.Physics, BallSim.SimIO]
+Modules = [BallSim, BallSim.Common, BallSim.Shapes, BallSim.Physics, BallSim.SimIO, BallSim.Fields, BallSim.Vis]
 ```
