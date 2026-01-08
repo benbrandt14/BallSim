@@ -6,7 +6,7 @@ using BallSim.Shapes
 using BallSim.Physics
 
 @testset "Physics: Invariants" begin
-    @testset "Energy Conservation (Vacuum)" begin
+    @testset "Energy Conservation (Vacuum) - 2D" begin
         # 1. Setup V2 System
         sys = Common.BallSystem(1, 2, Float32)
         sys.data.active[1] = true
@@ -33,6 +33,70 @@ using BallSim.Physics
         @test isapprox(E_init, E_final, atol=1e-5)
     end
 
+    @testset "Energy Conservation (Vacuum) - 3D" begin
+        # 1. Setup V3 System
+        sys = Common.BallSystem(1, 3, Float32)
+        sys.data.active[1] = true
+        sys.data.pos[1] = SVector(0f0, 0f0, 0f0)
+        sys.data.vel[1] = SVector(2.0f0, 3.0f0, 4.0f0)
+
+        # 2. Solver Setup
+        solver = Physics.CCDSolver(0.01f0, 1.0f0, 8)
+        # Use a large Sphere as boundary so we don't hit it
+        boundary = Shapes.Circle3D(100.0f0)
+        gravity = (p,v,m,t) -> SVector(0f0, 0f0, 0f0) # Vacuum
+
+        # 3. Measure Initial Energy
+        E_init = 0.5f0 * norm(sys.data.vel[1])^2
+
+        # 4. Run 100 steps
+        for _ in 1:100
+            Physics.step!(sys, solver, boundary, gravity)
+        end
+
+        # 5. Measure Final Energy
+        E_final = 0.5f0 * norm(sys.data.vel[1])^2
+
+        # Assert drift is negligible
+        @test isapprox(E_init, E_final, atol=1e-5)
+    end
+
+    @testset "Gravity Acceleration" begin
+        # 1. Setup V2 System
+        sys = Common.BallSystem(1, 2, Float32)
+        sys.data.active[1] = true
+        sys.data.pos[1] = SVector(0f0, 0f0)
+        sys.data.vel[1] = SVector(0f0, 0f0)
+        sys.data.mass[1] = 2.0f0
+
+        # 2. Solver Setup
+        # Use small dt and 1 substep to check exact acceleration integration
+        dt = 0.1f0
+        solver = Physics.CCDSolver(dt, 1.0f0, 1)
+        boundary = Shapes.Box(100.0f0, 100.0f0)
+
+        # Force F = (0, -10)
+        # Acceleration a = F/m = (0, -5)
+        gravity = (p,v,m,t) -> SVector(0f0, -10.0f0)
+
+        # 3. Step
+        Physics.step!(sys, solver, boundary, gravity)
+
+        # 4. Check Velocity
+        # v_new = v + a * dt = (0, 0) + (0, -5) * 0.1 = (0, -0.5)
+        @test isapprox(sys.data.vel[1], SVector(0f0, -0.5f0), atol=1e-5)
+
+        # 5. Check Position
+        # p_new = p + v_new * dt = (0, 0) + (0, -0.5) * 0.1 = (0, -0.05)
+        # Note: step! does v_new = v + a*dt, then p_new = p + v_new * dt (Semi-Implicit Euler / Symplectic Euler?)
+        # Let's check the implementation in Physics.jl
+        # v_new = v + a * dt_sub
+        # p_new = p + v_new * dt_sub
+        # Yes, it uses the new velocity for position update.
+
+        @test isapprox(sys.data.pos[1], SVector(0f0, -0.05f0), atol=1e-5)
+    end
+
     @testset "Tunneling Prevention" begin
         # High speed particle moving towards wall
         sys = Common.BallSystem(1, 2, Float32)
@@ -52,6 +116,31 @@ using BallSim.Physics
         @test dist <= 1e-4
         
         # Assert it bounced (velocity flipped)
+        @test sys.data.vel[1][1] < 0
+    end
+
+    @testset "Collision Counting" begin
+        sys = Common.BallSystem(1, 2, Float32)
+        sys.data.active[1] = true
+        sys.data.pos[1] = SVector(0.99f0, 0f0)
+        sys.data.vel[1] = SVector(1.0f0, 0f0) # Moving towards right wall at x=1
+
+        # One substep, enough to hit the wall
+        dt = 0.1f0
+        solver = Physics.CCDSolver(dt, 1.0f0, 1)
+        boundary = Shapes.Circle(1.0f0) # Radius 1
+        gravity = (p,v,m,t) -> SVector(0f0, 0f0)
+
+        # Verify initial collision count
+        @test sys.data.collisions[1] == 0
+
+        # Step
+        Physics.step!(sys, solver, boundary, gravity)
+
+        # Should have collided
+        @test sys.data.collisions[1] == 1
+
+        # Velocity should be flipped
         @test sys.data.vel[1][1] < 0
     end
 end
