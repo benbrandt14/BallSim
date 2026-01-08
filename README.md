@@ -1,4 +1,5 @@
 # BallSim: Physics Playground for Balls
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://benbrandt14.github.io/BallSim.jl/dev/)
 [![Aqua QA](https://raw.githubusercontent.com/JuliaTesting/Aqua.jl/master/badge.svg)](https://github.com/JuliaTesting/Aqua.jl)
 
 **Status:** Freshly Vibed Trash | **Core:** Julia 1.10+ | **Rendering:** Makie
@@ -104,6 +105,25 @@ julia --project=. tools/render_frame.jl sandbox/data_123456.h5 10
 
 * **Output:** A 4K (3840x2160) PNG with logarithmic tone mapping.
 * **Performance:** Multi-threaded accumulation buffer; renders 1M particles in milliseconds.
+
+### 3. ParaView Export (VTK)
+
+Export simulations directly to `.vtu` (Unstructured Grid) or `.vtp` (PolyData) formats for analysis in ParaView.
+
+**Configuration:**
+Set `mode` to `"export"` and use a filename with `.vtu` or `.vtp` extension.
+
+```json
+    "output": {
+        "mode": "export",
+        "filename": "sandbox/simulation.vtu", // Extension determines format (.vtu/.vtp vs .h5)
+        "fps": 60
+    }
+```
+
+**Features:**
+*   **Data Fields:** Exports Position, Velocity, Mass, Active status, and Collision counts.
+*   **Time Series:** Generates a sequence of files (e.g., `simulation_00001.vtu`) automatically recognized by ParaView as a time series.
 
 ## Extension Guide
 

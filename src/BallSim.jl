@@ -64,6 +64,14 @@ end
 
 # --- Loop B: Export ---
 function _run_loop(sys, mode::Common.ExportMode, solver, boundary, gravity, duration)
+    if endswith(mode.outfile, ".vtp") || endswith(mode.outfile, ".vtu")
+        _run_loop_vtk(sys, mode, solver, boundary, gravity, duration)
+    else
+        _run_loop_hdf5(sys, mode, solver, boundary, gravity, duration)
+    end
+end
+
+function _run_loop_hdf5(sys, mode, solver, boundary, gravity, duration)
     h5open(mode.outfile, "w") do file
         HDF5.attributes(file)["scenario"] = string(typeof(sys))
         HDF5.attributes(file)["dt"] = solver.dt
@@ -83,6 +91,23 @@ function _run_loop(sys, mode::Common.ExportMode, solver, boundary, gravity, dura
         end
     end
     println("\n✅ Data saved to $(mode.outfile)")
+end
+
+function _run_loop_vtk(sys, mode, solver, boundary, gravity, duration)
+    total_steps = ceil(Int, duration / solver.dt)
+    prog = Progress(total_steps, desc="Exporting VTK: ", color=:cyan)
+
+    frame_idx = 1
+
+    while sys.t < duration
+        Physics.step!(sys, solver, boundary, gravity)
+        if sys.iter % mode.interval == 0
+            SimIO.save_vtk(mode.outfile, frame_idx, sys)
+            frame_idx += 1
+        end
+        next!(prog)
+    end
+    println("\n✅ Data saved to $(mode.outfile) (series)")
 end
 
 # --- Loop C: Render ---
@@ -112,7 +137,7 @@ function _render_loop_generic(sys, mode, solver, boundary, gravity, duration)
         for _ in 1:steps_per_frame
             Physics.step!(sys, solver, boundary, gravity)
         end
-        Vis.compute_density!(grid, sys, 1.1, mode.u, mode.v)
+        Vis.compute_frame!(grid, sys, 1.1, mode.u, mode.v, mode.vis_config)
         notify(obs_grid)
         next!(prog)
     end
