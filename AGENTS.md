@@ -28,6 +28,40 @@ Run `./setup.sh` to install dependencies and run tests.
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
+### Documentation & Doctests
+We use `Documenter.jl` for documentation and `jldoctest` to ensure examples in docstrings stay up-to-date.
+
+**Writing Doctests:**
+Add a `jldoctest` block to your docstring. Ensure you define all necessary variables.
+```julia
+"""
+    my_func(x)
+
+Returns x + 1.
+
+# Example
+```jldoctest
+julia> using BallSim
+julia> my_func(1)
+2
+```
+"""
+function my_func(x) ...
+```
+
+**Running Doctests:**
+You can run doctests locally to verify them before pushing:
+```bash
+julia --project=docs/ -e '
+  using Pkg
+  Pkg.develop(PackageSpec(path=pwd()))
+  Pkg.instantiate()
+  using Documenter: DocMeta, doctest
+  using BallSim
+  DocMeta.setdocmeta!(BallSim, :DocTestSetup, :(using BallSim, StaticArrays); recursive=true)
+  doctest(BallSim)'
+```
+
 ### Running the Simulation
 ```bash
 julia --project=. sim.jl
