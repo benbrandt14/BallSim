@@ -67,6 +67,12 @@ julia --project=docs/ -e '
 julia --project=. sim.jl
 ```
 
+### UI Configurator
+A web-based configuration tool is available in `tools/ui/`.
+1. **Setup:** `julia tools/ui/setup_ui.jl`
+2. **Run:** `julia --project=tools/ui tools/ui/app.jl`
+The tool runs a web server (default port 8000) to configure and execute simulations.
+
 ### Adding Dependencies
 When adding a new package:
 ```julia
