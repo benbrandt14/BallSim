@@ -84,7 +84,6 @@ function step!(
                 dist = Common.sdf(boundary, p_new, t_local)
                 
                 if dist > 0
-                    sys.data.collisions[i] += 1
                     n = Common.normal(boundary, p_new, t_local)
                     p_new = p_new - n * (dist + epsilon)
                     
@@ -92,6 +91,8 @@ function step!(
                     if v_normal > 0
                         r = 1.0f0 + solver.restitution
                         v_new = v_new - r * v_normal * n
+                        # Count collision
+                        @inbounds sys.data.collisions[i] += 1
                     end
                 end
                 

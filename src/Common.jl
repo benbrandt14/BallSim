@@ -21,9 +21,9 @@ function get_default_solver end
 
 struct VisualizationConfig
     mode::Symbol
-    agg::Symbol
+    aggregation::Symbol
 end
-VisualizationConfig(; mode=:density, agg=:sum) = VisualizationConfig(mode, agg)
+VisualizationConfig(; mode=:density, aggregation=:sum) = VisualizationConfig(mode, aggregation)
 
 abstract type OutputMode end
 
