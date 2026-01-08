@@ -37,9 +37,10 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 ### UI Configurator (Recommended)
 
-A web-based UI is available for configuring and running simulations.
+A web-based UI is available for configuring and running simulations. This tool is managed as a separate development environment.
 
-1.  **Setup the UI environment:**
+1.  **Initialize the UI environment (Run once):**
+    This script activates the UI environment, links the local `BallSim` package, and installs necessary dependencies.
     ```bash
     julia tools/ui/setup_ui.jl
     ```
