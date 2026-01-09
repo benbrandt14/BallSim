@@ -55,16 +55,18 @@ function validate_choice(val, choices, name)
     return val
 end
 
-function validate_boundary_params(type, params)
+function validate_boundary_params(type, params, dims)
     if type in (:Circle, :InvertedCircle)
         if !haskey(params, :radius) error("Config Error: Boundary '$type' requires 'radius'.") end
         if params[:radius] <= 0 error("Config Error: 'radius' must be positive.") end
     elseif type == :Box
         if !haskey(params, :width) || !haskey(params, :height) error("Config Error: Box requires 'width' and 'height'.") end
-        # Optional check for depth if 3D, but can't distinguish dimension here easily without passing it.
-        # So we just check positivity of present params.
         if params[:width] <= 0 || params[:height] <= 0 error("Config Error: Box dims must be positive.") end
-        if haskey(params, :depth) && params[:depth] <= 0 error("Config Error: Box depth must be positive.") end
+
+        if dims == 3
+            if !haskey(params, :depth) error("Config Error: 3D Box requires 'depth'.") end
+            if params[:depth] <= 0 error("Config Error: Box depth must be positive.") end
+        end
     elseif type == :Ellipsoid
         if !haskey(params, :rx) || !haskey(params, :ry) error("Config Error: Ellipsoid requires 'rx' and 'ry'.") end
         if params[:rx] <= 0 || params[:ry] <= 0 error("Config Error: Ellipsoid radii must be positive.") end
