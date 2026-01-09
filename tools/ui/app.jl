@@ -2,6 +2,7 @@ using Genie
 using Stipple
 using Stipple.ReactiveTools
 using StippleUI
+using StippleUI.Layouts
 using CairoMakie
 using JSON3
 using Base64
@@ -187,14 +188,14 @@ end
 model = @init(ConfigApp)
 
 function ui()
-    dashboard(
-        vm(model),
-        [
-            heading("BallSim Configurator"),
+    layout(view="hHh lpR fFf", [
+        page_container(
+            [
+                heading("BallSim Configurator"),
 
-            row([
-                cell(class="st-module", [
-                    h4("Scenario"),
+                row([
+                    cell(class="st-module", [
+                        h4("Scenario"),
                     select(:scenario_type, options=["Spiral"], label="Type"),
                     numberfield(:scenario_N, label="Particles (N)"),
                     numberfield(:scenario_mass_min, label="Min Mass"),
@@ -242,10 +243,10 @@ function ui()
                     p("{{ status_message }}"),
                     btn("Start Simulation", @click("start_sim_btn = true"), :disable => :is_running, color="positive")
                 ])
-            ])
-        ],
-        title = "BallSim Configurator"
-    )
+                ])
+            ]
+        )
+    ])
 end
 
 @page("/", ui)
