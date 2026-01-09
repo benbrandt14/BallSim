@@ -86,10 +86,9 @@ function step!(
                 p_new = p + v_new * dt_sub
                 
                 # 2. Collision Detection
-                dist = Common.sdf(boundary, p_new, t_local)
+                collided, dist, n = Common.detect_collision(boundary, p_new, t_local)
                 
-                if dist > 0
-                    n = Common.normal(boundary, p_new, t_local)
+                if collided
                     p_new = p_new - n * (dist + epsilon)
                     
                     v_normal = dot(v_new, n)

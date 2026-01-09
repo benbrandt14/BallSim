@@ -96,4 +96,24 @@ function normal(b::AbstractBoundary{D}, p::SVector{D}, t) where D
     error("Normal not implemented for $(typeof(b))")
 end
 
+"""
+    detect_collision(boundary, p, t)
+
+Checks for collision and returns (collided, dist, normal).
+- collided: Bool, true if penetration depth > 0
+- dist: Float32, penetration depth (positive means collision)
+- normal: SVector, direction to resolve collision (points out of obstacle)
+
+Default implementation calls `sdf` and `normal`.
+"""
+function detect_collision(b::AbstractBoundary{D}, p::SVector{D}, t) where D
+    dist = sdf(b, p, t)
+    if dist > 0
+        n = normal(b, p, t)
+        return (true, dist, n)
+    else
+        return (false, 0f0, zero(SVector{D, Float32}))
+    end
+end
+
 end

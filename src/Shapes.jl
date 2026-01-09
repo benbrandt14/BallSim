@@ -83,6 +83,21 @@ function Common.normal(b::Circle, p::SVector{2}, t)
     return normalize(p)
 end
 
+function Common.detect_collision(b::Circle, p::SVector{2}, t)
+    # Optimized: Check d2 > r2 to avoid sqrt
+    d2 = dot(p, p)
+    r2 = b.radius^2
+
+    if d2 > r2
+        d = sqrt(d2)
+        dist = d - b.radius
+        # normal = p / d
+        return (true, dist, p / d)
+    else
+        return (false, 0f0, zero(SVector{2, Float32}))
+    end
+end
+
 # --- Box ---
 function Common.sdf(b::Box, p::SVector{2}, t)
     d = abs.(p) .- SVector(b.width/2, b.height/2)
@@ -158,6 +173,19 @@ function Common.normal(b::Circle3D, p::SVector{3}, t)
     return normalize(p)
 end
 
+function Common.detect_collision(b::Circle3D, p::SVector{3}, t)
+    d2 = dot(p, p)
+    r2 = b.radius^2
+
+    if d2 > r2
+        d = sqrt(d2)
+        dist = d - b.radius
+        return (true, dist, p / d)
+    else
+        return (false, 0f0, zero(SVector{3, Float32}))
+    end
+end
+
 # --- Box3D ---
 
 """
@@ -218,6 +246,54 @@ end
 function Common.normal(b::Inverted, p::SVector, t)
     # Normal points Inward
     return -Common.normal(b.inner, p, t)
+end
+
+# Generic Inverted (using sdf) is handled by fallback in Common.jl
+# But we can optimize Inverted{Circle} specifically.
+
+function Common.detect_collision(b::Inverted{2, Circle}, p::SVector{2}, t)
+    # Inverted Circle (Obstacle): Collision if Inside (d < r)
+    d2 = dot(p, p)
+    r2 = b.inner.radius^2
+
+    if d2 < r2
+        d = sqrt(d2)
+        # sdf(Circle) = d - r (negative)
+        # sdf(Inverted) = -(d - r) = r - d (positive)
+        dist = b.inner.radius - d
+
+        # normal(Circle) = p / d
+        # normal(Inverted) = -p / d
+
+        # Safe handling for center singularity
+        if d < 1e-6f0
+            n = SVector(0f0, 1f0)
+        else
+            n = -p / d
+        end
+        return (true, dist, n)
+    else
+        return (false, 0f0, zero(SVector{2, Float32}))
+    end
+end
+
+function Common.detect_collision(b::Inverted{3, Circle3D}, p::SVector{3}, t)
+    d2 = dot(p, p)
+    r2 = b.inner.radius^2
+
+    if d2 < r2
+        d = sqrt(d2)
+        dist = b.inner.radius - d
+
+        if d < 1e-6f0
+            n = SVector(0f0, 0f0, 1f0)
+        else
+            n = -p / d
+        end
+        return (true, dist, n)
+    else
+        return (false, 0f0, zero(SVector{3, Float32}))
+    end
 end
 
 end
