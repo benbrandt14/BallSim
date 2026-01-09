@@ -55,13 +55,18 @@ function validate_choice(val, choices, name)
     return val
 end
 
-function validate_boundary_params(type, params)
+function validate_boundary_params(type, params, dims)
     if type in (:Circle, :InvertedCircle)
         if !haskey(params, :radius) error("Config Error: Boundary '$type' requires 'radius'.") end
         if params[:radius] <= 0 error("Config Error: 'radius' must be positive.") end
     elseif type == :Box
         if !haskey(params, :width) || !haskey(params, :height) error("Config Error: Box requires 'width' and 'height'.") end
         if params[:width] <= 0 || params[:height] <= 0 error("Config Error: Box dims must be positive.") end
+
+        if dims == 3
+            if !haskey(params, :depth) error("Config Error: 3D Box requires 'depth'.") end
+            if params[:depth] <= 0 error("Config Error: Box depth must be positive.") end
+        end
     elseif type == :Ellipsoid
         if !haskey(params, :rx) || !haskey(params, :ry) error("Config Error: Ellipsoid requires 'rx' and 'ry'.") end
         if params[:rx] <= 0 || params[:ry] <= 0 error("Config Error: Ellipsoid radii must be positive.") end
@@ -121,7 +126,7 @@ function load_config(path::String)
     bound = phys.boundary
     bound_type = validate_choice(Symbol(get(bound, :type, "Circle")), [:Circle, :Box, :Ellipsoid, :InvertedCircle], "boundary.type")
     bound_params = Dict{Symbol, Any}(k => v for (k, v) in get(bound, :params, Dict()))
-    validate_boundary_params(bound_type, bound_params)
+    validate_boundary_params(bound_type, bound_params, dimensions)
     
     # 3. Output
     if !haskey(data, :output) error("Missing 'output' block") end
@@ -183,10 +188,12 @@ function create_boundary(cfg::SimulationConfig)
     if cfg.dimensions == 3
         if t == :Circle || t == :Circle3D
             return Shapes.Circle3D(Float32(p[:radius]))
+        elseif t == :Box
+            return Shapes.Box3D(Float32(p[:width]), Float32(p[:height]), Float32(p[:depth]))
         elseif t == :InvertedCircle
              return Shapes.Inverted(Shapes.Circle3D(Float32(p[:radius])))
         else
-            error("Boundary '$t' not supported in 3D yet (only Circle/Circle3D).")
+            error("Boundary '$t' not supported in 3D yet.")
         end
     else # 2D
         if t == :Circle

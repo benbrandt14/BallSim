@@ -26,6 +26,12 @@ struct Circle3D <: Common.AbstractBoundary{3}
     radius::Float32
 end
 
+struct Box3D <: Common.AbstractBoundary{3}
+    width::Float32
+    height::Float32
+    depth::Float32
+end
+
 # ==============================================================================
 # 2. MODIFIERS
 # ==============================================================================
@@ -150,6 +156,57 @@ end
 
 function Common.normal(b::Circle3D, p::SVector{3}, t)
     return normalize(p)
+end
+
+# --- Box3D ---
+
+"""
+    sdf(b::Box3D, p::SVector{3}, t)
+
+Signed Distance Function for a 3D Box.
+
+# Example
+```jldoctest
+julia> using BallSim, StaticArrays
+
+julia> b = Shapes.Box3D(2.0f0, 2.0f0, 2.0f0);
+
+julia> Common.sdf(b, SVector(0.0f0, 0.0f0, 0.0f0), 0.0f0)
+-1.0f0
+
+julia> Common.sdf(b, SVector(2.0f0, 0.0f0, 0.0f0), 0.0f0)
+1.0f0
+```
+"""
+function Common.sdf(b::Box3D, p::SVector{3}, t)
+    d = abs.(p) .- SVector(b.width/2, b.height/2, b.depth/2)
+    return norm(max.(d, 0.0f0)) + min(maximum(d), 0.0f0)
+end
+
+function Common.normal(b::Box3D, p::SVector{3}, t)
+    w, h, dp = b.width/2, b.height/2, b.depth/2
+    d = abs.(p) .- SVector(w, h, dp)
+
+    d_max_x = max(d[1], 0f0)
+    d_max_y = max(d[2], 0f0)
+    d_max_z = max(d[3], 0f0)
+
+    # Outside or touching boundary
+    if d_max_x > 0 || d_max_y > 0 || d_max_z > 0
+        nx = copysign(d_max_x, p[1])
+        ny = copysign(d_max_y, p[2])
+        nz = copysign(d_max_z, p[3])
+        return normalize(SVector(nx, ny, nz))
+    else
+        # Inside: normal is unit vector along max component of d (closest face)
+        if d[1] > d[2] && d[1] > d[3]
+            return SVector(sign(p[1]), 0f0, 0f0)
+        elseif d[2] > d[3]
+            return SVector(0f0, sign(p[2]), 0f0)
+        else
+            return SVector(0f0, 0f0, sign(p[3]))
+        end
+    end
 end
 
 # --- Inverted Logic ---
