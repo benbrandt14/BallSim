@@ -88,13 +88,39 @@ using BallSim.Physics
 
         # 5. Check Position
         # p_new = p + v_new * dt = (0, 0) + (0, -0.5) * 0.1 = (0, -0.05)
-        # Note: step! does v_new = v + a*dt, then p_new = p + v_new * dt (Semi-Implicit Euler / Symplectic Euler?)
-        # Let's check the implementation in Physics.jl
-        # v_new = v + a * dt_sub
-        # p_new = p + v_new * dt_sub
-        # Yes, it uses the new velocity for position update.
-
+        # Note: step! does v_new = v + a*dt, then p_new = p + v_new * dt (Semi-Implicit Euler)
         @test isapprox(sys.data.pos[1], SVector(0f0, -0.05f0), atol=1e-5)
+    end
+
+    @testset "Variable Mass Dynamics" begin
+        # Check that heavy objects accelerate slower for the same FORCE
+        # (Note: Gravity fields usually return F = m*g, so acceleration is constant g.
+        #  We need a fixed force field to see mass difference.)
+
+        sys = Common.BallSystem(2, 2, Float32)
+        sys.data.active[1] = true
+        sys.data.active[2] = true
+
+        sys.data.mass[1] = 1.0f0
+        sys.data.mass[2] = 2.0f0
+
+        sys.data.vel[1] = SVector(0f0, 0f0)
+        sys.data.vel[2] = SVector(0f0, 0f0)
+
+        dt = 1.0f0
+        solver = Physics.CCDSolver(dt, 1.0f0, 1)
+        boundary = Shapes.Box(100f0, 100f0)
+
+        # Constant Force Field F = (10, 0) regardless of mass
+        const_force = (p,v,m,t) -> SVector(10.0f0, 0.0f0)
+
+        Physics.step!(sys, solver, boundary, const_force)
+
+        # a1 = F/m1 = 10/1 = 10. v1 = 10*1 = 10
+        # a2 = F/m2 = 10/2 = 5.  v2 = 5*1 = 5
+
+        @test isapprox(sys.data.vel[1][1], 10.0f0, atol=1e-5)
+        @test isapprox(sys.data.vel[2][1], 5.0f0, atol=1e-5)
     end
 
     @testset "Tunneling Prevention" begin
@@ -119,28 +145,42 @@ using BallSim.Physics
         @test sys.data.vel[1][1] < 0
     end
 
-    @testset "Collision Counting" begin
+    @testset "Collision Counting - 2D" begin
         sys = Common.BallSystem(1, 2, Float32)
         sys.data.active[1] = true
         sys.data.pos[1] = SVector(0.99f0, 0f0)
         sys.data.vel[1] = SVector(1.0f0, 0f0) # Moving towards right wall at x=1
 
-        # One substep, enough to hit the wall
         dt = 0.1f0
         solver = Physics.CCDSolver(dt, 1.0f0, 1)
-        boundary = Shapes.Circle(1.0f0) # Radius 1
+        boundary = Shapes.Circle(1.0f0)
         gravity = (p,v,m,t) -> SVector(0f0, 0f0)
 
-        # Verify initial collision count
         @test sys.data.collisions[1] == 0
 
-        # Step
         Physics.step!(sys, solver, boundary, gravity)
 
-        # Should have collided
         @test sys.data.collisions[1] == 1
+        @test sys.data.vel[1][1] < 0
+    end
 
-        # Velocity should be flipped
+    @testset "Collision Counting - 3D" begin
+        sys = Common.BallSystem(1, 3, Float32)
+        sys.data.active[1] = true
+        # Box3D(2,2,2) -> bounds at +/- 1
+        sys.data.pos[1] = SVector(0.99f0, 0.0f0, 0.0f0)
+        sys.data.vel[1] = SVector(1.0f0, 0.0f0, 0.0f0)
+
+        dt = 0.1f0
+        solver = Physics.CCDSolver(dt, 1.0f0, 1)
+        boundary = Shapes.Box3D(2.0f0, 2.0f0, 2.0f0)
+        gravity = (p,v,m,t) -> SVector(0f0, 0f0, 0f0)
+
+        @test sys.data.collisions[1] == 0
+
+        Physics.step!(sys, solver, boundary, gravity)
+
+        @test sys.data.collisions[1] == 1
         @test sys.data.vel[1][1] < 0
     end
 end
