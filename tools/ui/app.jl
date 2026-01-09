@@ -187,8 +187,7 @@ end
 model = @init(ConfigApp)
 
 function ui()
-    dashboard(
-        vm(model),
+    page(model,
         [
             heading("BallSim Configurator"),
 
