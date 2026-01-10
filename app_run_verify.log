@@ -1,9 +1,0 @@
-ERROR: LoadError: ParseError:
-# Error @ /app/tools/ui/app.jl:285:1
-
-end
-└─┘ ── invalid identifier
-Stacktrace:
- [1] top-level scope
-   @ /app/tools/ui/app.jl:285
-in expression starting at /app/tools/ui/app.jl:285

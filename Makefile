@@ -7,13 +7,20 @@ test:
 	julia --project=. -e 'using Pkg; Pkg.test()'
 
 run:
-	julia --project=. -e 'using Pkg; Pkg.activate(); include("src/main.jl")'
+	julia --project=. sim.jl my_config.json
+
+app:
+	julia tools/ui/setup_ui.jl
+	julia --project=tools/ui tools/ui/app.jl
+
+render:
+	julia --project=. tools/render_frame.jl
 
 lint:
 	echo "I don't have linting configured yet."
 
 format:
-	julia --project=. -e 'using JuliaFormatter; format(".")'
+	echo "I don't have formatting configured yet."
 
 clean:
 	echo "I don't have any cleaning steps yet."
