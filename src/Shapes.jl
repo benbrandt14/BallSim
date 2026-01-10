@@ -135,6 +135,56 @@ function Common.normal(b::Box, p::SVector{2}, t)
     end
 end
 
+function Common.detect_collision(b::Box3D, p::SVector{3}, t)
+    w, h, dp = b.width/2, b.height/2, b.depth/2
+    d = abs.(p) .- SVector(w, h, dp)
+
+    d_max_x = max(d[1], 0f0)
+    d_max_y = max(d[2], 0f0)
+    d_max_z = max(d[3], 0f0)
+
+    if d_max_x > 0 || d_max_y > 0 || d_max_z > 0
+        dist_sq = d_max_x^2 + d_max_y^2 + d_max_z^2
+        dist = sqrt(dist_sq)
+
+        nx = copysign(d_max_x, p[1])
+        ny = copysign(d_max_y, p[2])
+        nz = copysign(d_max_z, p[3])
+
+        inv_dist = 1.0f0 / dist
+        n = SVector(nx * inv_dist, ny * inv_dist, nz * inv_dist)
+
+        return (true, dist, n)
+    else
+        return (false, 0f0, zero(SVector{3, Float32}))
+    end
+end
+
+function Common.detect_collision(b::Box, p::SVector{2}, t)
+    # Optimization: Calculate d once for both distance and normal
+    w, h = b.width/2, b.height/2
+    d = abs.(p) .- SVector(w, h)
+
+    d_max_x = max(d[1], 0f0)
+    d_max_y = max(d[2], 0f0)
+
+    if d_max_x > 0 || d_max_y > 0
+        # Outside
+        dist_sq = d_max_x^2 + d_max_y^2
+        dist = sqrt(dist_sq)
+
+        nx = copysign(d_max_x, p[1])
+        ny = copysign(d_max_y, p[2])
+
+        inv_dist = 1.0f0 / dist
+        n = SVector(nx * inv_dist, ny * inv_dist)
+
+        return (true, dist, n)
+    else
+        return (false, 0f0, zero(SVector{2, Float32}))
+    end
+end
+
 # --- Ellipsoid ---
 function Common.sdf(b::Ellipsoid, p::SVector{2}, t)
     # Gradient Normalization Approximation.
