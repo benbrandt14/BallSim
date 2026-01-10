@@ -28,6 +28,13 @@ Run `./setup.sh` to install dependencies and run tests.
 julia --project=. -e 'using Pkg; Pkg.test()'
 ```
 
+### Debugging
+If you need to debug the environment or verify file integrity (e.g. check for modification), run the debug tool test:
+```bash
+julia --project=. test/debug_tool.jl
+```
+This will print environment details, git status, and hashes of critical source files.
+
 ### Documentation & Doctests
 We use `Documenter.jl` for documentation and `jldoctest` to ensure examples in docstrings stay up-to-date.
 

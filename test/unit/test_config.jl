@@ -100,6 +100,23 @@ using BallSim.Config
         with_config(c_missing) do path
             @test_throws ErrorException Config.load_config(path)
         end
+
+        # 4. 3D Box missing Depth
+        c_box3d = deepcopy(base_config)
+        c_box3d[:simulation][:dimensions] = 3
+        c_box3d[:physics][:boundary] = Dict(:type => "Box", :params => Dict(:width => 10.0, :height => 10.0))
+        # Missing depth
+        with_config(c_box3d) do path
+             @test_throws ErrorException Config.load_config(path)
+        end
+
+        # 5. Invalid Gravity Vector Length
+        c_grav = deepcopy(base_config)
+        c_grav[:physics][:gravity] = Dict(:type => "Uniform", :params => Dict(:vector => [0.0, -9.8, 1.0])) # 3 components
+        c_grav[:simulation][:dimensions] = 2 # but 2D sim
+        with_config(c_grav) do path
+            @test_throws ErrorException Config.load_config(path)
+        end
     end
     
     @testset "Integration" begin
