@@ -60,17 +60,17 @@ true
 ```
 """
 function step!(
-    sys::Common.BallSystem{D, T, S}, 
-    solver::CCDSolver, 
-    boundary::Common.AbstractBoundary{D}, 
-    gravity_func::G
-) where {D, T, S, G}
-    
+    sys::Common.BallSystem{D,T,S},
+    solver::CCDSolver,
+    boundary::Common.AbstractBoundary{D},
+    gravity_func::G,
+) where {D,T,S,G}
+
     dt_sub = solver.dt / solver.substeps
     epsilon = 0.00001f0
     restitution_term = 1.0f0 + solver.restitution
-    
-    Threads.@threads for i in 1:length(sys.data.pos)
+
+    Threads.@threads for i = 1:length(sys.data.pos)
         @inbounds if sys.data.active[i]
             p = sys.data.pos[i]
             v = sys.data.vel[i]
@@ -78,19 +78,19 @@ function step!(
             inv_m = 1.0f0 / m
             t_local = sys.t
 
-            for _ in 1:solver.substeps
+            for _ = 1:solver.substeps
                 # 1. Integration
                 f = gravity_func(p, v, m, t_local)
                 a = f * inv_m
                 v_new = v + a * dt_sub
                 p_new = p + v_new * dt_sub
-                
+
                 # 2. Collision Detection
                 collided, dist, n = Common.detect_collision(boundary, p_new, t_local)
-                
+
                 if collided
                     p_new = p_new - n * (dist + epsilon)
-                    
+
                     v_normal = dot(v_new, n)
                     if v_normal > 0
                         v_new = v_new - restitution_term * v_normal * n
@@ -98,7 +98,7 @@ function step!(
                         @inbounds sys.data.collisions[i] += 1
                     end
                 end
-                
+
                 # Update local state for next substep
                 p = p_new
                 v = v_new

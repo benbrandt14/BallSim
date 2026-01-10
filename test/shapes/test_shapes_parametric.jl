@@ -9,18 +9,18 @@ using LinearAlgebra
 
 Computes the numerical gradient of scalar function `f` at point `p` using central differences.
 """
-function finite_difference_gradient(f, p::SVector{2}, ε=1f-4)
-    dx = SVector(ε, 0f0)
-    dy = SVector(0f0, ε)
+function finite_difference_gradient(f, p::SVector{2}, ε = 1.0f-4)
+    dx = SVector(ε, 0.0f0)
+    dy = SVector(0.0f0, ε)
     df_dx = (f(p + dx) - f(p - dx)) / (2 * ε)
     df_dy = (f(p + dy) - f(p - dy)) / (2 * ε)
     return SVector(df_dx, df_dy)
 end
 
-function finite_difference_gradient(f, p::SVector{3}, ε=1f-4)
-    dx = SVector(ε, 0f0, 0f0)
-    dy = SVector(0f0, ε, 0f0)
-    dz = SVector(0f0, 0f0, ε)
+function finite_difference_gradient(f, p::SVector{3}, ε = 1.0f-4)
+    dx = SVector(ε, 0.0f0, 0.0f0)
+    dy = SVector(0.0f0, ε, 0.0f0)
+    dz = SVector(0.0f0, 0.0f0, ε)
     df_dx = (f(p + dx) - f(p - dx)) / (2 * ε)
     df_dy = (f(p + dy) - f(p - dy)) / (2 * ε)
     df_dz = (f(p + dz) - f(p - dz)) / (2 * ε)
@@ -38,18 +38,43 @@ end
         # Ellipsoid: Use points closer to surface to ensure approximate SDF gradient matches analytical normal
         # Surface at (5,0) and (0,3).
         # Check near (5,0)
-        ("Ellipsoid", Shapes.Ellipsoid(5.0f0, 3.0f0), SVector(5.1f0, 0.0f0), SVector(4.9f0, 0.0f0)),
+        (
+            "Ellipsoid",
+            Shapes.Ellipsoid(5.0f0, 3.0f0),
+            SVector(5.1f0, 0.0f0),
+            SVector(4.9f0, 0.0f0),
+        ),
         # Inverted Circle:
         # Inner Circle has r=5.
         # Inside inner (dist < 5) -> Inverted SDF is POSITIVE (Collision/Obstacle).
         # Outside inner (dist > 5) -> Inverted SDF is NEGATIVE (Valid Space).
-        ("InvertedCircle", Shapes.Inverted(Shapes.Circle(5.0f0)), SVector(0.1f0, 0.1f0), SVector(10.0f0, 10.0f0))
+        (
+            "InvertedCircle",
+            Shapes.Inverted(Shapes.Circle(5.0f0)),
+            SVector(0.1f0, 0.1f0),
+            SVector(10.0f0, 10.0f0),
+        ),
     ]
 
     shapes_3d = [
-        ("Circle3D", Shapes.Circle3D(5.0f0), SVector(10.0f0, 10.0f0, 10.0f0), SVector(0.1f0, 0.1f0, 0.1f0)),
-        ("Box3D", Shapes.Box3D(4.0f0, 6.0f0, 2.0f0), SVector(10.0f0, 10.0f0, 10.0f0), SVector(0.1f0, 0.1f0, 0.1f0)),
-        ("InvertedCircle3D", Shapes.Inverted(Shapes.Circle3D(5.0f0)), SVector(0.1f0, 0.1f0, 0.1f0), SVector(10.0f0, 10.0f0, 10.0f0))
+        (
+            "Circle3D",
+            Shapes.Circle3D(5.0f0),
+            SVector(10.0f0, 10.0f0, 10.0f0),
+            SVector(0.1f0, 0.1f0, 0.1f0),
+        ),
+        (
+            "Box3D",
+            Shapes.Box3D(4.0f0, 6.0f0, 2.0f0),
+            SVector(10.0f0, 10.0f0, 10.0f0),
+            SVector(0.1f0, 0.1f0, 0.1f0),
+        ),
+        (
+            "InvertedCircle3D",
+            Shapes.Inverted(Shapes.Circle3D(5.0f0)),
+            SVector(0.1f0, 0.1f0, 0.1f0),
+            SVector(10.0f0, 10.0f0, 10.0f0),
+        ),
     ]
 
     t = 0.0f0
@@ -65,13 +90,13 @@ end
                 n_ana = Common.normal(shape, p_out, t)
                 grad_num = finite_difference_gradient(x -> Common.sdf(shape, x, t), p_out)
 
-                @test isapprox(n_ana, normalize(grad_num), atol=1e-2)
+                @test isapprox(n_ana, normalize(grad_num), atol = 1e-2)
 
                 # Verify Normal vs Gradient Consistency (Inside)
                 n_ana_in = Common.normal(shape, p_in, t)
                 grad_num_in = finite_difference_gradient(x -> Common.sdf(shape, x, t), p_in)
 
-                @test isapprox(n_ana_in, normalize(grad_num_in), atol=1e-2)
+                @test isapprox(n_ana_in, normalize(grad_num_in), atol = 1e-2)
             end
         end
     end
@@ -86,7 +111,7 @@ end
                 n_ana = Common.normal(shape, p_out, t)
                 grad_num = finite_difference_gradient(x -> Common.sdf(shape, x, t), p_out)
 
-                @test isapprox(n_ana, normalize(grad_num), atol=1e-2)
+                @test isapprox(n_ana, normalize(grad_num), atol = 1e-2)
             end
         end
     end

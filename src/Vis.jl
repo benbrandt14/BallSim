@@ -4,7 +4,7 @@ using ..Common
 using StaticArrays
 using LinearAlgebra
 
-function resolve_extractor(cfg::Common.VisualizationConfig, u=nothing, v=nothing)
+function resolve_extractor(cfg::Common.VisualizationConfig, u = nothing, v = nothing)
     if cfg.mode == :density
         return (sys, i) -> 1.0f0
     elseif cfg.mode == :mass
@@ -40,7 +40,14 @@ end
 Computes the visualization frame based on config.
 Projects 3D particles if necessary.
 """
-function compute_frame!(grid::Matrix{Float32}, sys::Common.BallSystem{D, T, S}, limit::Float64, u, v, cfg::Common.VisualizationConfig) where {D, T, S}
+function compute_frame!(
+    grid::Matrix{Float32},
+    sys::Common.BallSystem{D,T,S},
+    limit::Float64,
+    u,
+    v,
+    cfg::Common.VisualizationConfig,
+) where {D,T,S}
     # Initialize grid based on aggregation
     if cfg.aggregation == :max
         fill!(grid, -Inf32)
@@ -49,20 +56,20 @@ function compute_frame!(grid::Matrix{Float32}, sys::Common.BallSystem{D, T, S}, 
     end
 
     res_x, res_y = size(grid)
-    
+
     scale_x = res_x / (2 * limit)
     scale_y = res_y / (2 * limit)
     offset_x = limit
     offset_y = limit
-    
+
     extractor = resolve_extractor(cfg, u, v)
 
     # We use a naive racey update for performance in visualization.
     # For exact results, one would need atomics or reduction.
-    Threads.@threads for i in 1:length(sys.data.pos)
+    Threads.@threads for i = 1:length(sys.data.pos)
         @inbounds if sys.data.active[i]
             val = extractor(sys, i)
-            
+
             p = sys.data.pos[i]
             if D == 3
                 px = dot(p, u)
@@ -95,8 +102,21 @@ function compute_frame!(grid::Matrix{Float32}, sys::Common.BallSystem{D, T, S}, 
 end
 
 # Alias for backward compatibility if needed, though we will update call sites.
-function compute_density!(grid::Matrix{Float32}, sys::Common.BallSystem{D, T, S}, limit::Float64, u, v) where {D, T, S}
-    compute_frame!(grid, sys, limit, u, v, Common.VisualizationConfig(mode=:density, aggregation=:sum))
+function compute_density!(
+    grid::Matrix{Float32},
+    sys::Common.BallSystem{D,T,S},
+    limit::Float64,
+    u,
+    v,
+) where {D,T,S}
+    compute_frame!(
+        grid,
+        sys,
+        limit,
+        u,
+        v,
+        Common.VisualizationConfig(mode = :density, aggregation = :sum),
+    )
 end
 
 end

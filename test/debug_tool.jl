@@ -28,13 +28,19 @@ function generate_agent_debug_info()
 
     println(io, "\n--- Project Status ---")
     try
-        Pkg.status(io=io)
+        Pkg.status(io = io)
     catch e
         println(io, "Error checking Pkg status: $e")
     end
 
     println(io, "\n--- Critical File Hashes ---")
-    files = ["src/Physics.jl", "src/Common.jl", "src/Shapes.jl", "Project.toml", "Manifest.toml"]
+    files = [
+        "src/Physics.jl",
+        "src/Common.jl",
+        "src/Shapes.jl",
+        "Project.toml",
+        "Manifest.toml",
+    ]
     for f in files
         if isfile(f)
             h = bytes2hex(open(sha256, f))

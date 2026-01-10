@@ -5,20 +5,20 @@ using StaticArrays
 using LinearAlgebra
 
 @testset "Physics Fields" begin
-    
+
     # Mock particle state
     p = SVector(1.0f0, 0.0f0)
     v = SVector(0.0f0, 10.0f0)
     m = 2.0f0
     t = 0.0f0
-    
+
     @testset "Uniform Field" begin
         g = SVector(0.0f0, -9.8f0)
         field = Fields.UniformField(g)
         # Uniform field now returns Force = m * g
         @test field(p, v, m, t) == g * m
     end
-    
+
     @testset "Drag Field" begin
         # F = -k * v
         k = 0.5f0
@@ -26,13 +26,13 @@ using LinearAlgebra
         expected = -k * v
         @test field(p, v, m, t) ≈ expected
     end
-    
+
     @testset "Central Field (Gravity/Magnetism)" begin
         center = SVector(0.0f0, 0.0f0)
         strength = 10.0f0
-        
+
         @testset "Attractor Mode" begin
-            field = Fields.CentralField(center, strength, mode=:attractor)
+            field = Fields.CentralField(center, strength, mode = :attractor)
 
             # At (1,0), direction to center is (-1,0). Dist is 1.
             # F = 10 * (-1,0)
@@ -41,7 +41,7 @@ using LinearAlgebra
         end
 
         @testset "Repulsor Mode" begin
-            field = Fields.CentralField(center, strength, mode=:repulsor)
+            field = Fields.CentralField(center, strength, mode = :repulsor)
 
             # At (1,0), direction from center is (1,0). Dist is 1.
             # F = 10 * (1,0)
@@ -49,7 +49,7 @@ using LinearAlgebra
         end
 
         @testset "Inverse Square Law Verification" begin
-            field = Fields.CentralField(center, strength, mode=:attractor, cutoff=0.0f0)
+            field = Fields.CentralField(center, strength, mode = :attractor, cutoff = 0.0f0)
 
             p1 = SVector(2.0f0, 0.0f0)
             f1 = field(p1, v, m, t)
@@ -59,12 +59,13 @@ using LinearAlgebra
 
             # Distance doubled, force should be 1/4
             # We compare magnitudes
-            @test isapprox(norm(f2), norm(f1) / 4.0f0, atol=1e-5)
+            @test isapprox(norm(f2), norm(f1) / 4.0f0, atol = 1e-5)
         end
 
         @testset "Cutoff / Singularity Avoidance" begin
             cutoff = 0.5f0
-            field = Fields.CentralField(center, strength, mode=:attractor, cutoff=cutoff)
+            field =
+                Fields.CentralField(center, strength, mode = :attractor, cutoff = cutoff)
 
             # Point inside cutoff
             p_inner = SVector(0.1f0, 0.0f0)
@@ -96,14 +97,14 @@ using LinearAlgebra
             @test f_zero == SVector(0.0f0, 0.0f0)
         end
     end
-    
+
     @testset "Combined Field" begin
         # F_total = Gravity + Wind
-        g = Fields.UniformField(SVector(0f0, -10f0))
-        w = Fields.UniformField(SVector(5f0, 0f0))
-        
+        g = Fields.UniformField(SVector(0.0f0, -10.0f0))
+        w = Fields.UniformField(SVector(5.0f0, 0.0f0))
+
         combo = Fields.CombinedField((g, w))
-        
+
         @test combo(p, v, m, t) ≈ SVector(5.0f0, -10.0f0) * m
     end
 end
