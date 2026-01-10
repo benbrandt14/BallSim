@@ -28,8 +28,8 @@ julia> g(SVector(0f0,0f0), SVector(0f0,0f0), 1.0f0, 0.0f0) == SVector(0.0f0, -9.
 true
 ```
 """
-struct UniformField{D, T} <: AbstractField
-    vector::SVector{D, T}
+struct UniformField{D,T} <: AbstractField
+    vector::SVector{D,T}
 end
 (f::UniformField)(p, v, m, t) = f.vector * m
 
@@ -38,31 +38,31 @@ struct ViscousDrag{T} <: AbstractField
 end
 (f::ViscousDrag)(p, v, m, t) = -f.k * v
 
-struct CentralField{D, T} <: AbstractField
-    center::SVector{D, T}
+struct CentralField{D,T} <: AbstractField
+    center::SVector{D,T}
     strength::T
     mode::Symbol # :attractor, :repulsor
     cutoff::T    # Avoid singularity at r=0
 end
-CentralField(center, strength; mode=:attractor, cutoff=0.1f0) = 
+CentralField(center, strength; mode = :attractor, cutoff = 0.1f0) =
     CentralField(center, strength, mode, cutoff)
 
 function (f::CentralField)(p, v, m, t)
     diff = f.center - p
     dist_sq = dot(diff, diff)
     dist = sqrt(dist_sq)
-    
+
     # Soften the core to prevent explosion at dist=0
     denom = max(dist, f.cutoff)
-    
+
     # F = strength * direction
     # Attractive: points to center
     dir = diff / denom
-    
+
     # F = k / r^2 (Gravity/Magnetic) or F = k * r (Spring)?
     # Let's assume Inverse Square Law for "Fields"
     mag = f.strength / (denom^2)
-    
+
     force_vec = f.mode == :attractor ? (dir * mag) : -(dir * mag)
     return force_vec * m
 end
@@ -71,7 +71,7 @@ end
 # COMPOSITE FIELD
 # ==============================================================================
 
-struct CombinedField{T <: Tuple} <: AbstractField
+struct CombinedField{T<:Tuple} <: AbstractField
     fields::T
 end
 

@@ -18,10 +18,10 @@ using LinearAlgebra
 
     @testset "XY Projection" begin
         # Standard XY
-        u = SVector(1f0, 0f0, 0f0)
-        v = SVector(0f0, 1f0, 0f0)
+        u = SVector(1.0f0, 0.0f0, 0.0f0)
+        v = SVector(0.0f0, 1.0f0, 0.0f0)
 
-        cfg = BallSim.Common.VisualizationConfig(mode=:density, aggregation=:sum)
+        cfg = BallSim.Common.VisualizationConfig(mode = :density, aggregation = :sum)
         BallSim.Vis.compute_frame!(grid, sys, limit, u, v, cfg)
 
         # Point 1: (1, 0, 5) -> proj (1, 0).
@@ -39,11 +39,11 @@ using LinearAlgebra
 
     @testset "XZ Projection (Top Down)" begin
         # XZ
-        u = SVector(1f0, 0f0, 0f0)
-        v = SVector(0f0, 0f0, 1f0)
+        u = SVector(1.0f0, 0.0f0, 0.0f0)
+        v = SVector(0.0f0, 0.0f0, 1.0f0)
 
         fill!(grid, 0.0f0)
-        cfg = BallSim.Common.VisualizationConfig(mode=:density, aggregation=:sum)
+        cfg = BallSim.Common.VisualizationConfig(mode = :density, aggregation = :sum)
         BallSim.Vis.compute_frame!(grid, sys, limit, u, v, cfg)
 
         # Point 1: (1, 0, 5) -> proj (1, 5)
@@ -53,12 +53,12 @@ using LinearAlgebra
 
     @testset "Depth Mode" begin
         # XY projection, measuring Depth (Z)
-        u = SVector(1f0, 0f0, 0f0)
-        v = SVector(0f0, 1f0, 0f0)
+        u = SVector(1.0f0, 0.0f0, 0.0f0)
+        v = SVector(0.0f0, 1.0f0, 0.0f0)
         # Normal w = u x v = (0,0,1) -> Z axis
 
         # Use Max aggregation to capture depth
-        cfg = BallSim.Common.VisualizationConfig(mode=:depth, aggregation=:max)
+        cfg = BallSim.Common.VisualizationConfig(mode = :depth, aggregation = :max)
 
         BallSim.Vis.compute_frame!(grid, sys, limit, u, v, cfg)
 

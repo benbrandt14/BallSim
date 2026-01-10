@@ -1,4 +1,4 @@
-.PHONY: test run lint clean install format
+.PHONY: test run run-interactive run-render run-export app render lint format clean install setup-tools
 
 install:
 	julia --project=. -e 'using Pkg; Pkg.instantiate()'
@@ -6,8 +6,16 @@ install:
 test:
 	julia --project=. -e 'using Pkg; Pkg.test()'
 
-run:
-	julia --project=. sim.jl my_config.json
+run: run-interactive
+
+run-interactive:
+	julia --project=. sim.jl my_config.json --mode interactive
+
+run-render:
+	julia --project=. sim.jl my_config.json --mode render
+
+run-export:
+	julia --project=. sim.jl my_config.json --mode export
 
 app:
 	julia tools/ui/setup_ui.jl
@@ -16,11 +24,14 @@ app:
 render:
 	julia --project=. tools/render_frame.jl
 
-lint:
-	echo "I don't have linting configured yet."
+setup-tools:
+	julia tools/setup_maintenance.jl
 
-format:
-	echo "I don't have formatting configured yet."
+lint: setup-tools
+	julia tools/lint.jl
+
+format: setup-tools
+	julia tools/format.jl
 
 clean:
 	echo "I don't have any cleaning steps yet."

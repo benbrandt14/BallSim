@@ -11,30 +11,67 @@ using ..Scenarios
 struct SimulationConfig
     # Scenario
     scenario_type::Symbol
-    scenario_params::Dict{Symbol, Any}
-    
+    scenario_params::Dict{Symbol,Any}
+
     # Simulation meta
     duration::Float64
     dimensions::Int
-    
+
     # Physics
     dt::Float32
     solver::Symbol
-    solver_params::Dict{Symbol, Any}
-    
+    solver_params::Dict{Symbol,Any}
+
     gravity_type::Symbol
-    gravity_params::Dict{Symbol, Any}
-    
+    gravity_params::Dict{Symbol,Any}
+
     boundary_type::Symbol
-    boundary_params::Dict{Symbol, Any}
-    
+    boundary_params::Dict{Symbol,Any}
+
     # Output
-    mode::Symbol       
+    mode::Symbol
     output_file::String
     res::Int
     fps::Int
     projection::Any # Can be String ("xy") or Dict (custom)
     vis_config::Common.VisualizationConfig
+end
+
+function modify_config(cfg::SimulationConfig; kwargs...)
+    # Helper to reconstruct SimulationConfig with overrides
+    # kwargs can contain keys matching the struct fields
+
+    # We use a Dict to hold current values
+    fields = fieldnames(SimulationConfig)
+    current_values = Dict(f => getfield(cfg, f) for f in fields)
+
+    # Update with kwargs
+    for (k, v) in kwargs
+        if haskey(current_values, k)
+            current_values[k] = v
+        end
+    end
+
+    # Reconstruct
+    return SimulationConfig(
+        current_values[:scenario_type],
+        current_values[:scenario_params],
+        current_values[:duration],
+        current_values[:dimensions],
+        current_values[:dt],
+        current_values[:solver],
+        current_values[:solver_params],
+        current_values[:gravity_type],
+        current_values[:gravity_params],
+        current_values[:boundary_type],
+        current_values[:boundary_params],
+        current_values[:mode],
+        current_values[:output_file],
+        current_values[:res],
+        current_values[:fps],
+        current_values[:projection],
+        current_values[:vis_config],
+    )
 end
 
 # ==============================================================================
@@ -57,28 +94,50 @@ end
 
 function validate_boundary_params(type, params, dims)
     if type in (:Circle, :InvertedCircle)
-        if !haskey(params, :radius) error("Config Error: Boundary '$type' requires 'radius'.") end
-        if params[:radius] <= 0 error("Config Error: 'radius' must be positive.") end
+        if !haskey(params, :radius)
+            error("Config Error: Boundary '$type' requires 'radius'.")
+        end
+        if params[:radius] <= 0
+            error("Config Error: 'radius' must be positive.")
+        end
     elseif type == :Box
-        if !haskey(params, :width) || !haskey(params, :height) error("Config Error: Box requires 'width' and 'height'.") end
-        if params[:width] <= 0 || params[:height] <= 0 error("Config Error: Box dims must be positive.") end
+        if !haskey(params, :width) || !haskey(params, :height)
+            error("Config Error: Box requires 'width' and 'height'.")
+        end
+        if params[:width] <= 0 || params[:height] <= 0
+            error("Config Error: Box dims must be positive.")
+        end
 
         if dims == 3
-            if !haskey(params, :depth) error("Config Error: 3D Box requires 'depth'.") end
-            if params[:depth] <= 0 error("Config Error: Box depth must be positive.") end
+            if !haskey(params, :depth)
+                error("Config Error: 3D Box requires 'depth'.")
+            end
+            if params[:depth] <= 0
+                error("Config Error: Box depth must be positive.")
+            end
         end
     elseif type == :Ellipsoid
-        if !haskey(params, :rx) || !haskey(params, :ry) error("Config Error: Ellipsoid requires 'rx' and 'ry'.") end
-        if params[:rx] <= 0 || params[:ry] <= 0 error("Config Error: Ellipsoid radii must be positive.") end
+        if !haskey(params, :rx) || !haskey(params, :ry)
+            error("Config Error: Ellipsoid requires 'rx' and 'ry'.")
+        end
+        if params[:rx] <= 0 || params[:ry] <= 0
+            error("Config Error: Ellipsoid radii must be positive.")
+        end
     end
 end
 
 function validate_gravity_params(type, params, dims)
     if type == :Uniform
-        if !haskey(params, :vector) error("Config Error: Uniform gravity requires 'vector'.") end
-        if length(params[:vector]) != dims error("Config Error: Gravity vector must have $dims components.") end
+        if !haskey(params, :vector)
+            error("Config Error: Uniform gravity requires 'vector'.")
+        end
+        if length(params[:vector]) != dims
+            error("Config Error: Gravity vector must have $dims components.")
+        end
     elseif type == :Central
-        if !haskey(params, :strength) error("Config Error: Central gravity requires 'strength'.") end
+        if !haskey(params, :strength)
+            error("Config Error: Central gravity requires 'strength'.")
+        end
     end
 end
 
@@ -87,51 +146,80 @@ end
 # ==============================================================================
 
 function load_config(path::String)
-    if !isfile(path) error("Config Error: File not found at $path") end
+    if !isfile(path)
+        error("Config Error: File not found at $path")
+    end
     json_string = read(path, String)
-    data = try JSON3.read(json_string) catch e error("Invalid JSON") end
-    
+    data = try
+        JSON3.read(json_string)
+    catch e
+        error("Invalid JSON")
+    end
+
     # 1. Simulation / Scenario
-    if !haskey(data, :simulation) error("Missing 'simulation' block") end
+    if !haskey(data, :simulation)
+        error("Missing 'simulation' block")
+    end
     sim = data.simulation
-    
+
     scen_type = Symbol(get(sim, :type, "Spiral"))
-    scen_params = Dict{Symbol, Any}(k => v for (k, v) in get(sim, :params, Dict()))
-    
+    scen_params = Dict{Symbol,Any}(k => v for (k, v) in get(sim, :params, Dict()))
+
     # Backward compat for top-level N
     if haskey(sim, :N)
         scen_params[:N] = validate_positive(sim.N, "simulation.N")
     end
-    
+
     duration = validate_positive(Float64(get(sim, :duration, 10.0)), "simulation.duration")
-    dimensions = validate_choice(Int(get(sim, :dimensions, 2)), [2, 3], "simulation.dimensions")
+    dimensions =
+        validate_choice(Int(get(sim, :dimensions, 2)), [2, 3], "simulation.dimensions")
 
     # 2. Physics
-    if !haskey(data, :physics) error("Missing 'physics' block") end
+    if !haskey(data, :physics)
+        error("Missing 'physics' block")
+    end
     phys = data.physics
     dt = validate_positive(Float32(get(phys, :dt, 0.002)), "physics.dt")
     solver = validate_choice(Symbol(get(phys, :solver, "CCD")), [:CCD], "physics.solver")
-    
-    solver_params = Dict{Symbol, Any}(k => v for (k, v) in get(phys, :solver_params, Dict()))
+
+    solver_params = Dict{Symbol,Any}(k => v for (k, v) in get(phys, :solver_params, Dict()))
 
     # Gravity
-    if !haskey(phys, :gravity) error("Missing 'physics.gravity'") end
+    if !haskey(phys, :gravity)
+        error("Missing 'physics.gravity'")
+    end
     grav = phys.gravity
-    grav_type = validate_choice(Symbol(get(grav, :type, "Zero")), [:Uniform, :Central, :Zero], "gravity.type")
-    grav_params = Dict{Symbol, Any}(k => v for (k, v) in get(grav, :params, Dict()))
+    grav_type = validate_choice(
+        Symbol(get(grav, :type, "Zero")),
+        [:Uniform, :Central, :Zero],
+        "gravity.type",
+    )
+    grav_params = Dict{Symbol,Any}(k => v for (k, v) in get(grav, :params, Dict()))
     validate_gravity_params(grav_type, grav_params, dimensions)
-    
+
     # Boundary
-    if !haskey(phys, :boundary) error("Missing 'physics.boundary'") end
+    if !haskey(phys, :boundary)
+        error("Missing 'physics.boundary'")
+    end
     bound = phys.boundary
-    bound_type = validate_choice(Symbol(get(bound, :type, "Circle")), [:Circle, :Box, :Ellipsoid, :InvertedCircle], "boundary.type")
-    bound_params = Dict{Symbol, Any}(k => v for (k, v) in get(bound, :params, Dict()))
+    bound_type = validate_choice(
+        Symbol(get(bound, :type, "Circle")),
+        [:Circle, :Box, :Ellipsoid, :InvertedCircle],
+        "boundary.type",
+    )
+    bound_params = Dict{Symbol,Any}(k => v for (k, v) in get(bound, :params, Dict()))
     validate_boundary_params(bound_type, bound_params, dimensions)
-    
+
     # 3. Output
-    if !haskey(data, :output) error("Missing 'output' block") end
+    if !haskey(data, :output)
+        error("Missing 'output' block")
+    end
     out = data.output
-    mode = validate_choice(Symbol(get(out, :mode, "interactive")), [:interactive, :render, :export], "output.mode")
+    mode = validate_choice(
+        Symbol(get(out, :mode, "interactive")),
+        [:interactive, :render, :export],
+        "output.mode",
+    )
     output_file = get(out, :filename, "sandbox/output")
     res = validate_positive(get(out, :res, 800), "output.res")
     fps = validate_positive(get(out, :fps, 60), "output.fps")
@@ -140,14 +228,26 @@ function load_config(path::String)
     vis_data = get(out, :visualization, Dict())
     v_mode = Symbol(get(vis_data, :mode, "density"))
     v_agg = Symbol(get(vis_data, :aggregation, "sum"))
-    vis_config = Common.VisualizationConfig(mode=v_mode, aggregation=v_agg)
+    vis_config = Common.VisualizationConfig(mode = v_mode, aggregation = v_agg)
 
     return SimulationConfig(
-        scen_type, scen_params, duration, dimensions,
-        dt, solver, solver_params,
-        grav_type, grav_params,
-        bound_type, bound_params,
-        mode, output_file, res, fps, projection, vis_config
+        scen_type,
+        scen_params,
+        duration,
+        dimensions,
+        dt,
+        solver,
+        solver_params,
+        grav_type,
+        grav_params,
+        bound_type,
+        bound_params,
+        mode,
+        output_file,
+        res,
+        fps,
+        projection,
+        vis_config,
     )
 end
 
@@ -156,15 +256,23 @@ end
 function create_scenario(cfg::SimulationConfig)
     t = cfg.scenario_type
     p = cfg.scenario_params
-    
+
     if t == :Spiral
         N = get(p, :N, 1000)
         m_min = get(p, :mass_min, 1.0)
         m_max = get(p, :mass_max, 1.0)
         if cfg.dimensions == 2
-            return Scenarios.SpiralScenario(N=Int(N), mass_min=Float32(m_min), mass_max=Float32(m_max))
+            return Scenarios.SpiralScenario(
+                N = Int(N),
+                mass_min = Float32(m_min),
+                mass_max = Float32(m_max),
+            )
         elseif cfg.dimensions == 3
-            return Scenarios.SpiralScenario3D(N=Int(N), mass_min=Float32(m_min), mass_max=Float32(m_max))
+            return Scenarios.SpiralScenario3D(
+                N = Int(N),
+                mass_min = Float32(m_min),
+                mass_max = Float32(m_max),
+            )
         end
     else
         error("Unknown Scenario Type: $t")
@@ -174,7 +282,7 @@ end
 function create_solver(cfg::SimulationConfig)
     if cfg.solver == :CCD
         rest = Float32(get(cfg.solver_params, :restitution, 1.0))
-        sub  = Int(get(cfg.solver_params, :substeps, 8))
+        sub = Int(get(cfg.solver_params, :substeps, 8))
         return Physics.CCDSolver(cfg.dt, rest, sub)
     else
         error("Unknown Solver: $(cfg.solver)")
@@ -191,7 +299,7 @@ function create_boundary(cfg::SimulationConfig)
         elseif t == :Box
             return Shapes.Box3D(Float32(p[:width]), Float32(p[:height]), Float32(p[:depth]))
         elseif t == :InvertedCircle
-             return Shapes.Inverted(Shapes.Circle3D(Float32(p[:radius])))
+            return Shapes.Inverted(Shapes.Circle3D(Float32(p[:radius])))
         else
             error("Boundary '$t' not supported in 3D yet.")
         end
@@ -231,13 +339,13 @@ function create_gravity(cfg::SimulationConfig)
         return Fields.CentralField(
             pos,
             Float32(p[:strength]),
-            mode = Symbol(get(p, :mode, "attractor"))
+            mode = Symbol(get(p, :mode, "attractor")),
         )
     elseif t == :Zero
         if cfg.dimensions == 2
-            return (p, v, m, t) -> SVector(0f0, 0f0)
+            return (p, v, m, t) -> SVector(0.0f0, 0.0f0)
         elseif cfg.dimensions == 3
-            return (p, v, m, t) -> SVector(0f0, 0f0, 0f0)
+            return (p, v, m, t) -> SVector(0.0f0, 0.0f0, 0.0f0)
         end
     else
         error("Unknown Gravity Type: $t")
@@ -246,19 +354,19 @@ end
 
 function parse_projection(p)
     if p == "xy"
-        return (SVector(1f0, 0f0, 0f0), SVector(0f0, 1f0, 0f0))
+        return (SVector(1.0f0, 0.0f0, 0.0f0), SVector(0.0f0, 1.0f0, 0.0f0))
     elseif p == "xz"
-        return (SVector(1f0, 0f0, 0f0), SVector(0f0, 0f0, 1f0))
+        return (SVector(1.0f0, 0.0f0, 0.0f0), SVector(0.0f0, 0.0f0, 1.0f0))
     elseif p == "yz"
-        return (SVector(0f0, 1f0, 0f0), SVector(0f0, 0f0, 1f0))
+        return (SVector(0.0f0, 1.0f0, 0.0f0), SVector(0.0f0, 0.0f0, 1.0f0))
     elseif p isa AbstractDict && haskey(p, :u) && haskey(p, :v)
         u = p[:u]
         v = p[:v]
-        return (SVector{3, Float32}(u...), SVector{3, Float32}(v...))
+        return (SVector{3,Float32}(u...), SVector{3,Float32}(v...))
     else
         # Default fallback or error?
         # If 3D but no valid projection, default to xy
-        return (SVector(1f0, 0f0, 0f0), SVector(0f0, 1f0, 0f0))
+        return (SVector(1.0f0, 0.0f0, 0.0f0), SVector(0.0f0, 1.0f0, 0.0f0))
     end
 end
 
@@ -266,11 +374,25 @@ function create_mode(cfg::SimulationConfig)
     u, v = parse_projection(cfg.projection)
 
     if cfg.mode == :interactive
-        return Common.InteractiveMode(res=cfg.res, fps=cfg.fps, u=u, v=v, vis_config=cfg.vis_config)
+        return Common.InteractiveMode(
+            res = cfg.res,
+            fps = cfg.fps,
+            u = u,
+            v = v,
+            vis_config = cfg.vis_config,
+        )
     elseif cfg.mode == :render
         mkpath(dirname(cfg.output_file))
-        fname = endswith(cfg.output_file, ".mp4") ? cfg.output_file : "$(cfg.output_file).mp4"
-        return Common.RenderMode(fname, fps=cfg.fps, res=cfg.res, u=u, v=v, vis_config=cfg.vis_config)
+        fname =
+            endswith(cfg.output_file, ".mp4") ? cfg.output_file : "$(cfg.output_file).mp4"
+        return Common.RenderMode(
+            fname,
+            fps = cfg.fps,
+            res = cfg.res,
+            u = u,
+            v = v,
+            vis_config = cfg.vis_config,
+        )
     elseif cfg.mode == :export
         mkpath(dirname(cfg.output_file))
         fname = cfg.output_file
@@ -278,7 +400,7 @@ function create_mode(cfg::SimulationConfig)
         if !endswith(fname, ".h5") && !endswith(fname, ".vtp") && !endswith(fname, ".vtu")
             fname = "$(fname).h5"
         end
-        return Common.ExportMode(fname, interval=10)
+        return Common.ExportMode(fname, interval = 10)
     else
         error("Unknown Mode: $(cfg.mode)")
     end
