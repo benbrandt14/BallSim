@@ -9,13 +9,13 @@ test:
 run: run-interactive
 
 run-interactive:
-	julia --project=. sim.jl my_config.json --mode interactive
+	julia --project=. sim.jl config.json --mode interactive
 
 run-render:
-	julia --project=. sim.jl my_config.json --mode render
+	julia --project=. sim.jl config.json --mode render
 
 run-export:
-	julia --project=. sim.jl my_config.json --mode export
+	julia --project=. sim.jl config.json --mode export
 
 app:
 	julia tools/ui/setup_ui.jl
