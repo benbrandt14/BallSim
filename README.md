@@ -36,7 +36,7 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 ## Usage
 
-### UI Configurator (Recommended)
+### 1. UI Configurator (Recommended)
 
 A web-based UI is available for configuring and running simulations. This tool is managed as a separate development environment.
 
@@ -53,7 +53,7 @@ A web-based UI is available for configuring and running simulations. This tool i
 
 3.  Open `http://localhost:8000` (or the provided URL) in your browser.
 
-### Command Line
+### 2. Command Line
 
 Run the simulation using the default `config.json`:
 
@@ -118,7 +118,7 @@ julia --project=. sim.jl my_config.json
 }
 ```
 
-### 2. The Darkroom (High-Res Visualization)
+### 3. The Darkroom (High-Res Visualization)
 
 Turn raw HDF5 data into art using the standalone renderer tool.
 
@@ -131,7 +131,7 @@ julia --project=. tools/render_frame.jl sandbox/data_123456.h5 10
 * **Output:** A 4K (3840x2160) PNG with logarithmic tone mapping.
 * **Performance:** Multi-threaded accumulation buffer; renders 1M particles in milliseconds.
 
-### 3. ParaView Export (VTK)
+### 4. ParaView Export (VTK)
 
 Export simulations directly to `.vtu` (Unstructured Grid) or `.vtp` (PolyData) formats for analysis in ParaView.
 
