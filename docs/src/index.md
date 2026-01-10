@@ -28,6 +28,89 @@ cd BallSim.jl
 julia --project=. -e 'using Pkg; Pkg.instantiate()'
 ```
 
+## Analytics & Verification
+
+We use agent-based workflows to verify physics correctness directly in the documentation.
+
+### 1. Physics Verification (Trajectory Analysis)
+
+We simulate a single particle under gravity to verify the parabolic trajectory.
+
+```@example analytics
+using BallSim
+using CairoMakie
+using StaticArrays
+using LaTeXStrings
+
+# Configure a minimal simulation
+# We use a custom script approach since the high-level API writes to disk.
+# Here we manually step the physics to capture data in memory.
+
+# 1. Setup System
+const T = Float32
+const D = 2
+N = 1
+sys = BallSim.Common.BallSystem{D, T, SVector{D, T}}(N)
+sys.data.pos[1] = SVector{D, T}(0.0, 10.0)
+sys.data.vel[1] = SVector{D, T}(5.0, 0.0) # Horizontal launch
+sys.data.mass[1] = 1.0
+
+# 2. Setup Solver & Field
+solver = BallSim.Physics.CCDSolver(T(0.01), T(0.8), 1) # dt=0.01, res=0.8
+# Standard Gravity downwards
+gravity = BallSim.Fields.ConstantField(SVector{D, T}(0.0, -9.81))
+# Simple box boundary
+boundary = BallSim.Shapes.Box(SVector{D, T}(20.0, 20.0))
+
+# 3. Run Simulation
+steps = 100
+trajectory_x = Float64[]
+trajectory_y = Float64[]
+
+for i in 1:steps
+    push!(trajectory_x, sys.data.pos[1][1])
+    push!(trajectory_y, sys.data.pos[1][2])
+    BallSim.Physics.step!(sys, gravity, boundary, solver)
+end
+
+# 4. Plot Results
+fig = Figure()
+ax = Axis(fig[1, 1], title = L"Trajectory under $g=9.81$", xlabel = "x (m)", ylabel = "y (m)")
+lines!(ax, trajectory_x, trajectory_y, color = :blue, label = "Particle Path")
+
+# Add ground line
+hlines!(ax, [-10.0], color = :red, linestyle = :dash, label = "Ground")
+
+axislegend(ax)
+save("simulation_analytics.svg", fig) # hide
+nothing # hide
+```
+
+![](simulation_analytics.svg)
+
+### 2. Force Diagram (Free Body Diagram)
+
+A declarative vector diagram representing the forces on a ball.
+
+```@example analytics
+using TikzPictures
+using LaTeXStrings
+
+# Create a TikZ diagram
+tp = TikzPicture(L"""
+    \draw[fill=gray!20] (0,0) circle (1cm);
+    \draw[->, thick, red] (0,0) -- (0,-2) node[right] {$F_g = mg$};
+    \draw[->, thick, blue] (0,0) -- (2,0) node[above] {$v$};
+    \node at (0,0) {m};
+""", options="scale=1.5")
+
+save(SVG("fbd"), tp) # hide
+nothing # hide
+```
+
+![](fbd.svg)
+
+
 ## Usage
 
 ### 1. UI Configurator (Recommended)
