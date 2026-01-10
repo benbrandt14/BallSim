@@ -38,12 +38,18 @@ end
         # Ellipsoid: Use points closer to surface to ensure approximate SDF gradient matches analytical normal
         # Surface at (5,0) and (0,3).
         # Check near (5,0)
-        ("Ellipsoid", Shapes.Ellipsoid(5.0f0, 3.0f0), SVector(5.1f0, 0.0f0), SVector(4.9f0, 0.0f0))
+        ("Ellipsoid", Shapes.Ellipsoid(5.0f0, 3.0f0), SVector(5.1f0, 0.0f0), SVector(4.9f0, 0.0f0)),
+        # Inverted Circle:
+        # Inner Circle has r=5.
+        # Inside inner (dist < 5) -> Inverted SDF is POSITIVE (Collision/Obstacle).
+        # Outside inner (dist > 5) -> Inverted SDF is NEGATIVE (Valid Space).
+        ("InvertedCircle", Shapes.Inverted(Shapes.Circle(5.0f0)), SVector(0.1f0, 0.1f0), SVector(10.0f0, 10.0f0))
     ]
 
     shapes_3d = [
         ("Circle3D", Shapes.Circle3D(5.0f0), SVector(10.0f0, 10.0f0, 10.0f0), SVector(0.1f0, 0.1f0, 0.1f0)),
-        ("Box3D", Shapes.Box3D(4.0f0, 6.0f0, 2.0f0), SVector(10.0f0, 10.0f0, 10.0f0), SVector(0.1f0, 0.1f0, 0.1f0))
+        ("Box3D", Shapes.Box3D(4.0f0, 6.0f0, 2.0f0), SVector(10.0f0, 10.0f0, 10.0f0), SVector(0.1f0, 0.1f0, 0.1f0)),
+        ("InvertedCircle3D", Shapes.Inverted(Shapes.Circle3D(5.0f0)), SVector(0.1f0, 0.1f0, 0.1f0), SVector(10.0f0, 10.0f0, 10.0f0))
     ]
 
     t = 0.0f0
