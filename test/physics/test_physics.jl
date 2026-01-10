@@ -123,7 +123,7 @@ using BallSim.Physics
         @test isapprox(sys.data.vel[2][1], 5.0f0, atol=1e-5)
     end
 
-    @testset "Tunneling Prevention" begin
+    @testset "Tunneling Prevention (Thick Wall)" begin
         # High speed particle moving towards wall
         sys = Common.BallSystem(1, 2, Float32)
         sys.data.active[1] = true
@@ -142,6 +142,26 @@ using BallSim.Physics
         @test dist <= 1e-4
         
         # Assert it bounced (velocity flipped)
+        @test sys.data.vel[1][1] < 0
+    end
+
+    @testset "Tunneling Prevention (Thin Box)" begin
+        # 1. Setup: Particle moving fast towards a thin box boundary
+        # Box is 10 wide, 10 high. Right wall is at x=5.
+        sys = Common.BallSystem(1, 2, Float32)
+        sys.data.active[1] = true
+        sys.data.pos[1] = SVector(4.9f0, 0f0)
+        sys.data.vel[1] = SVector(100.0f0, 0f0)
+
+        # 2. Solver: use substeps to catch it
+        solver = Physics.CCDSolver(0.01f0, 1.0f0, 20) # 20 substeps
+        boundary = Shapes.Box(10.0f0, 10.0f0)
+        gravity = (p,v,m,t) -> SVector(0f0, 0f0)
+
+        Physics.step!(sys, solver, boundary, gravity)
+
+        # 3. Verify it bounced
+        @test sys.data.pos[1][1] <= 5.0f0
         @test sys.data.vel[1][1] < 0
     end
 
@@ -182,5 +202,66 @@ using BallSim.Physics
 
         @test sys.data.collisions[1] == 1
         @test sys.data.vel[1][1] < 0
+    end
+
+    @testset "Inverted Circle (Obstacle)" begin
+        # Particle outside the obstacle (valid space for Inverted is Outside the inner circle)
+        # Test: Particle moving TOWARDS the circle from outside.
+        # Circle radius 1. Start closer to ensure penetration in one step.
+        sys = Common.BallSystem(1, 2, Float32)
+        sys.data.active[1] = true
+        sys.data.pos[1] = SVector(1.05f0, 0f0)
+        sys.data.vel[1] = SVector(-1.0f0, 0f0)
+
+        solver = Physics.CCDSolver(0.1f0, 1.0f0, 5)
+        # Inverted Circle: The circle itself is the solid object.
+        boundary = Shapes.Inverted(Shapes.Circle(1.0f0))
+        gravity = (p,v,m,t) -> SVector(0f0, 0f0)
+
+        Physics.step!(sys, solver, boundary, gravity)
+
+        # Should bounce off the surface at r=1
+        @test sys.data.pos[1][1] >= 1.0f0 # Stay outside
+        @test sys.data.vel[1][1] > 0 # Reversed direction
+    end
+
+    @testset "Ellipsoid Reflection" begin
+        # Ellipsoid (5, 3).
+        # Particle at (4.9, 0) moving right -> hits tip at (5,0)
+        sys = Common.BallSystem(1, 2, Float32)
+        sys.data.active[1] = true
+        sys.data.pos[1] = SVector(4.9f0, 0f0)
+        sys.data.vel[1] = SVector(5.0f0, 0f0)
+
+        # Increase dt to ensure it crosses the boundary (4.9 + 5*0.1 = 5.4 > 5.0)
+        solver = Physics.CCDSolver(0.1f0, 1.0f0, 10)
+        boundary = Shapes.Ellipsoid(5.0f0, 3.0f0)
+        gravity = (p,v,m,t) -> SVector(0f0, 0f0)
+
+        Physics.step!(sys, solver, boundary, gravity)
+
+        @test sys.data.pos[1][1] <= 5.0f0 # Inside
+        @test sys.data.vel[1][1] < 0 # Bounced
+    end
+
+    @testset "Restitution (Energy Loss)" begin
+        # 1. Setup V2 System
+        sys = Common.BallSystem(1, 2, Float32)
+        sys.data.active[1] = true
+        sys.data.pos[1] = SVector(4.9f0, 0f0) # Near right wall
+        sys.data.vel[1] = SVector(10.0f0, 0f0) # Moving right
+
+        # 2. Solver Setup: Restitution 0.5
+        restitution = 0.5f0
+        solver = Physics.CCDSolver(0.01f0, restitution, 10)
+        boundary = Shapes.Box(10.0f0, 10.0f0) # Wall at x=5
+        gravity = (p,v,m,t) -> SVector(0f0, 0f0)
+
+        Physics.step!(sys, solver, boundary, gravity)
+
+        # 3. Check Velocity magnitude
+        # Should be flipped and halved
+        @test sys.data.vel[1][1] < 0
+        @test isapprox(abs(sys.data.vel[1][1]), 10.0f0 * restitution, atol=0.1)
     end
 end

@@ -266,12 +266,12 @@ function Common.detect_collision(b::Inverted{2, Circle}, p::SVector{2}, t)
         # normal(Inverted) = -p / d
 
         # Safe handling for center singularity
-        if d < 1e-6f0
+        if d < 1.0f-6
             n = SVector(0f0, 1f0)
         else
             n = -p / d
         end
-        return (true, dist, n)
+        return (true, dist, SVector{2, Float32}(n))
     else
         return (false, 0f0, zero(SVector{2, Float32}))
     end
