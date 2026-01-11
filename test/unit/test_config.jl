@@ -1,5 +1,5 @@
 using Test
-using JSON3
+using YAML
 using StaticArrays
 using BallSim
 using BallSim.Common
@@ -10,10 +10,8 @@ using BallSim.Config
 @testset "Configuration System" begin
 
     function with_config(f::Function, dict::Dict)
-        path = tempname() * ".json"
-        open(path, "w") do io
-            JSON3.write(io, dict)
-        end
+        path = tempname() * ".yaml"
+        YAML.write_file(path, dict)
         try
             f(path)
         finally
