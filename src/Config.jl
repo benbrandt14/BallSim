@@ -33,6 +33,7 @@ struct SimulationConfig
     output_file::String
     res::Int
     fps::Int
+    interval::Int # Step interval for export
     projection::Any # Can be String ("xy") or Dict (custom)
     vis_config::Common.VisualizationConfig
 end
@@ -69,6 +70,7 @@ function modify_config(cfg::SimulationConfig; kwargs...)
         current_values[:output_file],
         current_values[:res],
         current_values[:fps],
+        current_values[:interval],
         current_values[:projection],
         current_values[:vis_config],
     )
@@ -223,6 +225,7 @@ function load_config(path::String)
     output_file = get(out, :filename, "sandbox/output")
     res = validate_positive(get(out, :res, 800), "output.res")
     fps = validate_positive(get(out, :fps, 60), "output.fps")
+    interval = validate_positive(Int(get(out, :interval, 10)), "output.interval")
     projection = get(out, :projection, "xy")
 
     vis_data = get(out, :visualization, Dict())
@@ -246,6 +249,7 @@ function load_config(path::String)
         output_file,
         res,
         fps,
+        interval,
         projection,
         vis_config,
     )
@@ -400,7 +404,7 @@ function create_mode(cfg::SimulationConfig)
         if !endswith(fname, ".h5") && !endswith(fname, ".vtp") && !endswith(fname, ".vtu")
             fname = "$(fname).h5"
         end
-        return Common.ExportMode(fname, interval = 10)
+        return Common.ExportMode(fname, interval = cfg.interval)
     else
         error("Unknown Mode: $(cfg.mode)")
     end

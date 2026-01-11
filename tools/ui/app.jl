@@ -81,6 +81,7 @@ function build_config(model)
             [model.gravity_vector_x[], model.gravity_vector_y[], model.gravity_vector_z[]]
     elseif g_type == "Central"
         grav_params[:strength] = model.gravity_strength[]
+        grav_params[:center] = [model.gravity_center_x[], model.gravity_center_y[], model.gravity_center_z[]]
     end
 
     bound_params = Dict{Symbol,Any}()
@@ -90,9 +91,22 @@ function build_config(model)
     elseif b_type == "Box"
         bound_params[:width] = model.boundary_width[]
         bound_params[:height] = model.boundary_height[]
+        if model.dimensions[] == 3
+            bound_params[:depth] = model.boundary_depth[]
+        end
     end
 
     vis_config = Common.VisualizationConfig(mode = :density, aggregation = :sum)
+
+    # Mode Logic
+    mode_str = model.mode[]
+    mode_sym = if mode_str == "Render"
+        :render
+    elseif mode_str == "Export"
+        :export
+    else
+        :render
+    end
 
     return SimulationConfig(
         Symbol(model.scenario_type[]),
@@ -106,10 +120,11 @@ function build_config(model)
         grav_params,
         Symbol(b_type),
         bound_params,
-        :render,
+        mode_sym,
         model.output_filename[],
         model.output_res[],
         model.output_fps[],
+        model.export_interval[],
         "xy",
         vis_config,
     )
@@ -137,17 +152,23 @@ end
     @in gravity_vector_y = -9.8
     @in gravity_vector_z = 0.0
     @in gravity_strength = 1000.0
+    @in gravity_center_x = 0.0
+    @in gravity_center_y = 0.0
+    @in gravity_center_z = 0.0
 
     # Boundary
     @in boundary_type = "Circle" # Circle, Box, Ellipsoid, InvertedCircle
     @in boundary_radius = 1.0
     @in boundary_width = 2.0
     @in boundary_height = 2.0
+    @in boundary_depth = 2.0
 
     # Output
+    @in mode = "Render" # Render, Export
     @in output_res = 800
     @in output_fps = 60
     @in output_filename = "sim_output"
+    @in export_interval = 10
 
     # UI State
     @out preview_img = ""
@@ -181,7 +202,7 @@ end
             @async begin
                 try
                     BallSim.run_simulation(cfg)
-                    status_message = "Simulation Complete: $(cfg.output_file).mp4"
+                    status_message = "Simulation Complete: $(cfg.output_file)"
                 catch e
                     status_message = "Error: $e"
                     println("Error running simulation: $e")
@@ -228,14 +249,30 @@ function ui()
                         select(:dimensions, options = [2, 3], label = "Dims"),
                         numberfield(:duration, label = "Duration (s)"),
                         numberfield(:dt, label = "Time Step (dt)"),
+
+                        separator(),
                         h5("Gravity"),
                         select(
                             :gravity_type,
                             options = ["Zero", "Uniform", "Central"],
                             label = "Gravity Type",
                         ),
-                        numberfield(:gravity_vector_y, label = "Gravity Y (Uniform)"),
-                        numberfield(:gravity_strength, label = "Strength (Central)"),
+
+                        # Uniform Gravity Inputs
+                        Genie.Renderer.Html.div(v__if = "gravity_type == 'Uniform'", [
+                            numberfield(:gravity_vector_x, label = "X"),
+                            numberfield(:gravity_vector_y, label = "Y"),
+                            numberfield(:gravity_vector_z, label = "Z", v__if="dimensions == 3"),
+                        ]),
+
+                        # Central Gravity Inputs
+                        Genie.Renderer.Html.div(v__if = "gravity_type == 'Central'", [
+                             numberfield(:gravity_strength, label = "Strength"),
+                             p("Center:"),
+                             numberfield(:gravity_center_x, label = "X"),
+                             numberfield(:gravity_center_y, label = "Y"),
+                             numberfield(:gravity_center_z, label = "Z", v__if="dimensions == 3"),
+                        ]),
                     ],
                 ),
             ]),
@@ -249,18 +286,33 @@ function ui()
                             options = ["Circle", "Box", "InvertedCircle"],
                             label = "Type",
                         ),
-                        numberfield(:boundary_radius, label = "Radius"),
-                        numberfield(:boundary_width, label = "Width"),
-                        numberfield(:boundary_height, label = "Height"),
+
+                        Genie.Renderer.Html.div(v__if="boundary_type == 'Circle' || boundary_type == 'InvertedCircle'", [
+                             numberfield(:boundary_radius, label = "Radius"),
+                        ]),
+
+                        Genie.Renderer.Html.div(v__if="boundary_type == 'Box'", [
+                             numberfield(:boundary_width, label = "Width"),
+                             numberfield(:boundary_height, label = "Height"),
+                             numberfield(:boundary_depth, label = "Depth", v__if="dimensions == 3"),
+                        ]),
                     ],
                 ),
                 cell(
                     class = "st-module",
                     [
                         h4("Output"),
+                        select(:mode, options=["Render", "Export"], label="Mode"),
                         textfield(:output_filename, label = "Filename"),
-                        numberfield(:output_res, label = "Resolution"),
-                        numberfield(:output_fps, label = "FPS"),
+
+                        Genie.Renderer.Html.div(v__if="mode == 'Render'", [
+                            numberfield(:output_res, label = "Resolution"),
+                            numberfield(:output_fps, label = "FPS"),
+                        ]),
+
+                        Genie.Renderer.Html.div(v__if="mode == 'Export'", [
+                            numberfield(:export_interval, label = "Interval (Steps)"),
+                        ]),
                     ],
                 ),
             ]),
@@ -299,4 +351,6 @@ end
 # MAIN
 # ==============================================================================
 
-up(8000; async = false)
+if abspath(PROGRAM_FILE) == @__FILE__
+    up(8000; async = false)
+end
