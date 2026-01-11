@@ -12,7 +12,7 @@
 
 ### Architecture
 *   **Decoupling:** Physics, Geometry, and Rendering are strictly decoupled.
-*   **Configuration:** Use `config.json` and `src/Config.jl` for simulation parameters.
+*   **Configuration:** Use `config.yaml` and `src/Config.jl` for simulation parameters.
 *   **Extensions:**
     *   Scenarios in `src/Scenarios.jl`
     *   Shapes in `src/Shapes.jl`
@@ -73,13 +73,6 @@ julia --project=docs/ -e '
 ```bash
 julia --project=. sim.jl
 ```
-
-### UI Configurator
-A web-based configuration tool is available in `tools/ui/`.
-1. **Initialize Environment (Run once):** `julia tools/ui/setup_ui.jl`
-   - This script sets up the UI environment and links the local `BallSim` package.
-2. **Run:** `julia --project=tools/ui tools/ui/app.jl`
-The tool runs a web server (default port 8000) to configure and execute simulations.
 
 ### Adding Dependencies
 When adding a new package:
