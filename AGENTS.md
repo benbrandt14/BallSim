@@ -35,6 +35,13 @@ julia --project=. test/debug_tool.jl
 ```
 This will print environment details, git status, and hashes of critical source files.
 
+### Debugging with Simulation
+If you need to debug the simulation runtime environment (e.g. check if `Physics.step!` works without error and see the log output), run:
+```bash
+julia --project=. test/debug_agent.jl
+```
+This runs a minimal simulation step and prints the output to stdout.
+
 ### Documentation & Doctests
 We use `Documenter.jl` for documentation and `jldoctest` to ensure examples in docstrings stay up-to-date.
 
