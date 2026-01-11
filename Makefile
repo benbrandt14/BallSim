@@ -8,8 +8,11 @@ test:
 
 run: run-interactive
 
+setup-interactive:
+	julia tools/setup_interactive.jl
+
 run-interactive:
-	julia --project=. sim.jl config.json --mode interactive
+	julia --project=tools/interactive sim.jl config.json --mode interactive
 
 run-render:
 	julia --project=. sim.jl config.json --mode render
