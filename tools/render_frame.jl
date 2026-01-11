@@ -16,13 +16,32 @@ function render_darkroom(
     println("📸 Darkroom: Processing Frame $frame_idx from $h5_path")
 
     # 1. Load Data
-    N = h5open(h5_path, "r") do file
-        read_attribute(file["frame_$(lpad(frame_idx, 5, '0'))"], "N")
+    N = 0
+    dims = 2 # Default to 2D
+
+    h5open(h5_path, "r") do file
+        # Read N from the specific frame
+        frame_grp = file["frame_$(lpad(frame_idx, 5, '0'))"]
+        N = read_attribute(frame_grp, "N")
+
+        # Try to detect dimensions from file-level "scenario" attribute
+        if haskey(HDF5.attributes(file), "scenario")
+            scen_str = read_attribute(file, "scenario")
+            # Parse "BallSystem{D,"
+            m = match(r"BallSystem\{(\d+),", scen_str)
+            if m !== nothing
+                dims = parse(Int, m.captures[1])
+                println("   Detected Dimensions: $dims (from $scen_str)")
+            else
+                println("   Warning: Could not parse dimensions from '$scen_str'. Defaulting to 2D.")
+            end
+        else
+            println("   Warning: No 'scenario' attribute found. Defaulting to 2D.")
+        end
     end
 
     # Create system with correct parameters to match file
-    # Note: We rely on the generic BallSystem constructor here
-    sys = Common.BallSystem(N, 2, Float32)
+    sys = Common.BallSystem(N, dims, Float32)
 
     h5open(h5_path, "r") do file
         SimIO.load_frame!(sys, file, frame_idx)
@@ -59,6 +78,8 @@ function render_darkroom(
             p = sys.data.pos[i]
 
             # Map physics (0,0) -> center of image
+            # For 3D, this simply projects onto XY plane (p[1], p[2])
+            # which works because SVector{3} supports indexing [1] and [2]
             px = (p[1] * scale_x) + center_x
             py = (p[2] * scale_y) + center_y
 

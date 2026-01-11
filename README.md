@@ -25,7 +25,7 @@ Inspired by [the work of Alexander Gustafsson](https://www.youtube.com/watch?v=V
 
 * **Performance:** Structure-of-Arrays (SoA) data layout with multi-threaded physics kernels.
 * **Modular Architecture:** Physics, Geometry, and Rendering are strictly decoupled.
-* **Declarative Configuration:** Full simulation control via JSON files (solvers, fields, boundaries).
+* **Declarative Configuration:** Full simulation control via YAML files (solvers, fields, boundaries).
 * **"Darkroom" Rendering:** Headless HDF5 export pipeline with a separate high-res rendering tool (supports Logarithmic Tone Mapping).
 * **3D Support:** Full 3D simulation capabilities with configurable 2D visualization projection (XY, XZ, YZ) and "Depth" visualization mode.
 * **Extensible:** Easy interfaces for defining new Shapes, Force Fields, and Scenarios.
@@ -33,7 +33,7 @@ Inspired by [the work of Alexander Gustafsson](https://www.youtube.com/watch?v=V
 ## Installation
 
 ```bash
-git clone [https://github.com/benbrandt14/BallSim](https://github.com/benbrandt14/BallSim)
+git clone https://github.com/benbrandt14/BallSim
 cd BallSim
 # Option 1: Quick Start (Installs Julia if needed, instantiates, and tests)
 ./setup.sh
@@ -44,26 +44,9 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 ## Usage
 
-### 1. UI Configurator (Recommended)
+### 1. Command Line
 
-A web-based UI is available for configuring and running simulations. This tool is managed as a separate development environment.
-
-1.  **Initialize the UI environment (Run once):**
-    This script activates the UI environment, links the local `BallSim` package, and installs necessary dependencies.
-    ```bash
-    julia tools/ui/setup_ui.jl
-    ```
-
-2.  **Run the App:**
-    ```bash
-    julia --project=tools/ui tools/ui/app.jl
-    ```
-
-3.  Open `http://localhost:8000` (or the provided URL) in your browser.
-
-### 2. Command Line
-
-Run the simulation using the default `config.json`:
+Run the simulation using the default `config.yaml`:
 
 ```bash
 julia --project=. sim.jl
@@ -72,61 +55,55 @@ julia --project=. sim.jl
 Or specify a custom configuration file:
 
 ```bash
-julia --project=. sim.jl my_config.json
+julia --project=. sim.jl my_config.yaml
 ```
 
-**Configuration Structure (`config.json`):**
+**Configuration Structure (`config.yaml`):**
 
-```json
-{
-    "simulation": {
-        "type": "Spiral",
-        "params": { "N": 50000 },
-        "duration": 10.0,
-        "dimensions": 3
-    },
-    "physics": {
-        "dt": 0.002,
-        "solver": "CCD",
-        "solver_params": {
-            "restitution": 0.5,
-            "substeps": 8
-        },
-        "gravity": {
-            "type": "Central",
-            "params": {
-                "strength": 20.0,
-                "mode": "attractor",
-                "center": [0.0, 0.0, 0.0]
-            }
-        },
-        "boundary": {
-            "type": "Circle",
-            "params": {
-                "radius": 1.0
-            }
-        }
-    },
-    // Example 3D Box
-    // "boundary": {
-    //   "type": "Box",
-    //   "params": { "width": 10.0, "height": 10.0, "depth": 10.0 }
-    // },
-    "output": {
-        "mode": "render",
-        "res": 800,
-        "fps": 60,
-        "filename": "sandbox/simulation",
-        "projection": "xy",
-        "visualization": {
-            "mode": "depth",
-            "aggregation": "max"
-        }
-    }
-}
+```yaml
+simulation:
+  type: Spiral
+  params:
+    N: 50000
+  duration: 10.0
+  dimensions: 3
+physics:
+  dt: 0.002
+  solver: CCD
+  solver_params:
+    restitution: 0.5
+    substeps: 8
+  gravity:
+    type: Central
+    params:
+      strength: 20.0
+      mode: attractor
+      center: [0.0, 0.0, 0.0]
+  boundary:
+    type: Circle
+    params:
+      radius: 1.0
+
+# Example 3D Box
+# boundary:
+#   type: Box
+#   params:
+#     width: 10.0
+#     height: 10.0
+#     depth: 10.0
+
+output:
+  mode: render
+  res: 800
+  fps: 60
+  filename: sandbox/simulation
+  projection: xy
+  visualization:
+    mode: depth
+    aggregation: max
 ```
 
-### 3. The Darkroom (High-Res Visualization)
+### 2. The Darkroom (High-Res Visualization)
 
 Turn raw HDF5 data into art using the standalone renderer tool.
 
@@ -139,19 +116,18 @@ julia --project=. tools/render_frame.jl sandbox/data_123456.h5 10
 * **Output:** A 4K (3840x2160) PNG with logarithmic tone mapping.
 * **Performance:** Multi-threaded accumulation buffer; renders 1M particles in milliseconds.
 
-### 4. ParaView Export (VTK)
+### 3. ParaView Export (VTK)
 
 Export simulations directly to `.vtu` (Unstructured Grid) or `.vtp` (PolyData) formats for analysis in ParaView.
 
 **Configuration:**
 Set `mode` to `"export"` and use a filename with `.vtu` or `.vtp` extension.
 
-```json
-    "output": {
-        "mode": "export",
-        "filename": "sandbox/simulation.vtu",
-        "fps": 60
-    }
+```yaml
+output:
+  mode: export
+  filename: sandbox/simulation.vtu
+  fps: 60
 ```
 
 **Features:**
@@ -252,7 +228,7 @@ See `AGENTS.md` for more detailed workflow instructions and coding standards.
 src/
 ├── BallSim.jl       # Main entry point & dependency loader
 ├── Common.jl        # Core Types (BallSystem) & Interfaces
-├── Config.jl        # JSON Configuration Factory
+├── Config.jl        # YAML Configuration Factory
 ├── Physics.jl       # Solvers (CCDSolver) & Integration Kernels
 ├── Shapes.jl        # Geometry (SDFs for Circle, Box, Ellipsoid)
 ├── Fields.jl        # Force Fields (Gravity, Drag, Central)
