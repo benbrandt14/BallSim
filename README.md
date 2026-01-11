@@ -5,6 +5,14 @@
 
 **Status:** Freshly Vibed Trash | **Core:** Julia 1.10+ | **Rendering:** Makie
 
+```mermaid
+graph TD
+    A[Initialize] --> B[Update Physics]
+    B --> C[Check Collisions]
+    C --> D[Render]
+    D --> B
+```
+
 <img width="1562" height="1514" alt="image" src="https://github.com/user-attachments/assets/335fab92-36f8-40ad-9b98-db4e8cda0d6d" />
 
 # BallSim.jl
