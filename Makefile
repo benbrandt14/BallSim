@@ -1,40 +1,31 @@
-.PHONY: test run run-interactive run-render run-export app render lint format clean install setup-tools
+# BallSim Makefile
 
-install:
-	julia --project=. -e 'using Pkg; Pkg.instantiate()'
+.PHONY: run run-render run-export run-interactive test lint format setup clean
+
+# Default runs render (headless)
+run: run-render
+
+run-render:
+	julia --project=. sim.jl config.yaml --mode render
+
+run-export:
+	julia --project=. sim.jl config.yaml --mode export
+
+run-interactive:
+	julia --project=. -e 'using Pkg; Pkg.add("GLMakie"); using GLMakie'
+	julia --project=. sim.jl config.yaml --mode interactive
 
 test:
 	julia --project=. -e 'using Pkg; Pkg.test()'
 
-run: run-interactive
+lint:
+	julia --project=tools/maintenance -e 'using Pkg; Pkg.instantiate(); include("../lint.jl")'
 
-setup-interactive:
-	julia tools/setup_interactive.jl
+format:
+	julia --project=tools/maintenance -e 'using Pkg; Pkg.instantiate(); include("../format.jl")'
 
-run-interactive:
-	julia --project=tools/interactive sim.jl config.json --mode interactive
-
-run-render:
-	julia --project=. sim.jl config.json --mode render
-
-run-export:
-	julia --project=. sim.jl config.json --mode export
-
-app:
-	julia tools/ui/setup_ui.jl
-	julia --project=tools/ui tools/ui/app.jl
-
-render:
-	julia --project=. tools/render_frame.jl
-
-setup-tools:
-	julia tools/setup_maintenance.jl
-
-lint: setup-tools
-	julia tools/lint.jl
-
-format: setup-tools
-	julia tools/format.jl
+setup:
+	./setup.sh
 
 clean:
-	echo "I don't have any cleaning steps yet."
+	rm -rf sandbox/

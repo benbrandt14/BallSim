@@ -151,14 +151,14 @@ function command_line_main()
     # Usage: sim.jl [config_file] [--mode <mode>] [--out <file>]
 
     args = ARGS
-    config_path = "config.json"
+    config_path = "config.yaml"
 
     # 1. Determine config path (first argument if not starting with -)
     if length(args) > 0 && !startswith(args[1], "-")
         config_path = args[1]
         args = args[2:end]
     elseif !isfile(config_path)
-        error("Default 'config.json' not found. Please provide a config file.")
+        error("Default 'config.yaml' not found. Please provide a config file.")
     end
 
     println("⚙️ Loading Configuration: $config_path")

@@ -1,6 +1,6 @@
 module Config
 
-using JSON3
+using YAML
 using StaticArrays
 using ..Common
 using ..Shapes
@@ -147,29 +147,36 @@ end
 # LOADER
 # ==============================================================================
 
+function symbol_keys(d::AbstractDict)
+    return Dict{Symbol,Any}(Symbol(k) => (v isa AbstractDict ? symbol_keys(v) : v) for (k, v) in d)
+end
+
 function load_config(path::String)
     if !isfile(path)
         error("Config Error: File not found at $path")
     end
-    json_string = read(path, String)
+
     data = try
-        JSON3.read(json_string)
+        YAML.load_file(path)
     catch e
-        error("Invalid JSON")
+        error("Invalid YAML: $e")
     end
+
+    # Convert string keys to symbols
+    data = symbol_keys(data)
 
     # 1. Simulation / Scenario
     if !haskey(data, :simulation)
         error("Missing 'simulation' block")
     end
-    sim = data.simulation
+    sim = data[:simulation]
 
     scen_type = Symbol(get(sim, :type, "Spiral"))
-    scen_params = Dict{Symbol,Any}(k => v for (k, v) in get(sim, :params, Dict()))
+    scen_params = get(sim, :params, Dict())
 
     # Backward compat for top-level N
     if haskey(sim, :N)
-        scen_params[:N] = validate_positive(sim.N, "simulation.N")
+        scen_params[:N] = validate_positive(sim[:N], "simulation.N")
     end
 
     duration = validate_positive(Float64(get(sim, :duration, 10.0)), "simulation.duration")
@@ -180,43 +187,43 @@ function load_config(path::String)
     if !haskey(data, :physics)
         error("Missing 'physics' block")
     end
-    phys = data.physics
+    phys = data[:physics]
     dt = validate_positive(Float32(get(phys, :dt, 0.002)), "physics.dt")
     solver = validate_choice(Symbol(get(phys, :solver, "CCD")), [:CCD], "physics.solver")
 
-    solver_params = Dict{Symbol,Any}(k => v for (k, v) in get(phys, :solver_params, Dict()))
+    solver_params = get(phys, :solver_params, Dict())
 
     # Gravity
     if !haskey(phys, :gravity)
         error("Missing 'physics.gravity'")
     end
-    grav = phys.gravity
+    grav = phys[:gravity]
     grav_type = validate_choice(
         Symbol(get(grav, :type, "Zero")),
         [:Uniform, :Central, :Zero],
         "gravity.type",
     )
-    grav_params = Dict{Symbol,Any}(k => v for (k, v) in get(grav, :params, Dict()))
+    grav_params = get(grav, :params, Dict())
     validate_gravity_params(grav_type, grav_params, dimensions)
 
     # Boundary
     if !haskey(phys, :boundary)
         error("Missing 'physics.boundary'")
     end
-    bound = phys.boundary
+    bound = phys[:boundary]
     bound_type = validate_choice(
         Symbol(get(bound, :type, "Circle")),
         [:Circle, :Box, :Ellipsoid, :InvertedCircle],
         "boundary.type",
     )
-    bound_params = Dict{Symbol,Any}(k => v for (k, v) in get(bound, :params, Dict()))
+    bound_params = get(bound, :params, Dict())
     validate_boundary_params(bound_type, bound_params, dimensions)
 
     # 3. Output
     if !haskey(data, :output)
         error("Missing 'output' block")
     end
-    out = data.output
+    out = data[:output]
     mode = validate_choice(
         Symbol(get(out, :mode, "interactive")),
         [:interactive, :render, :export],
