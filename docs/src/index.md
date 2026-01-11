@@ -50,7 +50,7 @@ using LaTeXStrings
 const T = Float32
 const D = 2
 N = 1
-sys = BallSim.Common.BallSystem{D, T, SVector{D, T}}(N)
+sys = BallSim.Common.BallSystem(N, D, T)
 sys.data.pos[1] = SVector{D, T}(0.0, 10.0)
 sys.data.vel[1] = SVector{D, T}(5.0, 0.0) # Horizontal launch
 sys.data.mass[1] = 1.0
@@ -58,9 +58,9 @@ sys.data.mass[1] = 1.0
 # 2. Setup Solver & Field
 solver = BallSim.Physics.CCDSolver(T(0.01), T(0.8), 1) # dt=0.01, res=0.8
 # Standard Gravity downwards
-gravity = BallSim.Fields.ConstantField(SVector{D, T}(0.0, -9.81))
+gravity = BallSim.Fields.UniformField(SVector{D, T}(0.0, -9.81))
 # Simple box boundary
-boundary = BallSim.Shapes.Box(SVector{D, T}(20.0, 20.0))
+boundary = BallSim.Shapes.Box(T(20.0), T(20.0))
 
 # 3. Run Simulation
 steps = 100
@@ -70,7 +70,7 @@ trajectory_y = Float64[]
 for i in 1:steps
     push!(trajectory_x, sys.data.pos[1][1])
     push!(trajectory_y, sys.data.pos[1][2])
-    BallSim.Physics.step!(sys, gravity, boundary, solver)
+    BallSim.Physics.step!(sys, solver, boundary, gravity)
 end
 
 # 4. Plot Results
@@ -104,7 +104,7 @@ tp = TikzPicture(L"""
     \node at (0,0) {m};
 """, options="scale=1.5")
 
-save(SVG("fbd"), tp) # hide
+TikzPictures.save(SVG("fbd"), tp) # hide
 nothing # hide
 ```
 
@@ -113,26 +113,9 @@ nothing # hide
 
 ## Usage
 
-### 1. UI Configurator (Recommended)
+### 1. Command Line
 
-A web-based UI is available for configuring and running simulations. This tool is managed as a separate development environment.
-
-1.  **Initialize the UI environment (Run once):**
-    This script activates the UI environment, links the local `BallSim` package, and installs necessary dependencies.
-    ```bash
-    julia tools/ui/setup_ui.jl
-    ```
-
-2.  **Run the App:**
-    ```bash
-    julia --project=tools/ui tools/ui/app.jl
-    ```
-
-3.  Open `http://localhost:8000` (or the provided URL) in your browser.
-
-### 2. Command Line
-
-Run the simulation using the default `config.json`:
+Run the simulation using the default `config.yaml`:
 
 ```bash
 julia --project=. sim.jl
@@ -141,52 +124,44 @@ julia --project=. sim.jl
 Or specify a custom configuration file:
 
 ```bash
-julia --project=. sim.jl my_config.json
+julia --project=. sim.jl my_config.yaml
 ```
 
-**Configuration Structure (`config.json`):**
+**Configuration Structure (`config.yaml`):**
 
-```json
-{
-    "simulation": {
-        "type": "Spiral",
-        "params": { "N": 50000 },
-        "duration": 10.0,
-        "dimensions": 3
-    },
-    "physics": {
-        "dt": 0.002,
-        "solver": "CCD",
-        "solver_params": {
-            "restitution": 0.5,
-            "substeps": 8
-        },
-        "gravity": {
-            "type": "Central",
-            "params": {
-                "strength": 20.0,
-                "mode": "attractor",
-                "center": [0.0, 0.0, 0.0]
-            }
-        },
-        "boundary": {
-            "type": "Circle",
-            "params": {
-                "radius": 1.0
-            }
-        }
-    },
-    "output": {
-        "mode": "render",
-        "res": 800,
-        "fps": 60,
-        "filename": "sandbox/simulation",
-        "projection": "xy"
-    }
-}
+```yaml
+simulation:
+  type: Spiral
+  params:
+    N: 50000
+  duration: 10.0
+  dimensions: 3
+physics:
+  dt: 0.002
+  solver: CCD
+  solver_params:
+    restitution: 0.5
+    substeps: 8
+  gravity:
+    type: Central
+    params:
+      strength: 20.0
+      mode: attractor
+      center: [0.0, 0.0, 0.0]
+  boundary:
+    type: Circle
+    params:
+      radius: 1.0
+
+output:
+  mode: render
+  res: 800
+  fps: 60
+  filename: sandbox/simulation
+  projection: xy
 ```
 
-### 3. The Darkroom (High-Res Visualization)
+### 2. The Darkroom (High-Res Visualization)
 
 Turn raw HDF5 data into art using the standalone renderer tool.
 
@@ -199,19 +174,18 @@ julia --project=. tools/render_frame.jl sandbox/data_123456.h5 10
 * **Output:** A 4K (3840x2160) PNG with logarithmic tone mapping.
 * **Performance:** Multi-threaded accumulation buffer; renders 1M particles in milliseconds.
 
-### 4. ParaView Export (VTK)
+### 3. ParaView Export (VTK)
 
 Export simulations directly to `.vtu` (Unstructured Grid) or `.vtp` (PolyData) formats for analysis in ParaView.
 
 **Configuration:**
 Set `mode` to `"export"` and use a filename with `.vtu` or `.vtp` extension.
 
-```json
-    "output": {
-        "mode": "export",
-        "filename": "sandbox/simulation.vtu",
-        "fps": 60
-    }
+```yaml
+output:
+  mode: export
+  filename: sandbox/simulation.vtu
+  fps: 60
 ```
 
 **Features:**

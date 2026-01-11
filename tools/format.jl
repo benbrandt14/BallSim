@@ -1,7 +1,7 @@
-using Pkg
-Pkg.activate(joinpath(@__DIR__, "maintenance"))
-
 using JuliaFormatter
+using Pkg
 
-println("🧹 Running JuliaFormatter...")
-format(joinpath(@__DIR__, ".."), verbose = true)
+Pkg.activate(".")
+println("Running JuliaFormatter...")
+format(".")
+println("Formatting complete.")

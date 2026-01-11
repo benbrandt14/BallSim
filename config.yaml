@@ -1,0 +1,37 @@
+# BallSim Configuration
+# Default YAML configuration for quick editing.
+
+simulation:
+  type: Spiral
+  params:
+    N: 50000
+  duration: 10.0
+  dimensions: 3
+
+physics:
+  dt: 0.002
+  solver: CCD
+  solver_params:
+    restitution: 0.5
+    substeps: 8
+  gravity:
+    type: Central
+    params:
+      strength: 20.0
+      mode: attractor
+      center: [0.0, 0.0, 0.0]
+  boundary:
+    type: Circle
+    params:
+      radius: 1.0
+
+output:
+  # Mode: interactive (requires GLMakie), render (headless mp4), export (h5/vtu)
+  mode: render
+  res: 800
+  fps: 60
+  filename: sandbox/simulation
+  projection: xy
+  visualization:
+    mode: density
+    aggregation: sum
