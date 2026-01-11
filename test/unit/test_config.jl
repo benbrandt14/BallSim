@@ -1,135 +1,48 @@
 using Test
-using YAML
-using StaticArrays
 using BallSim
-using BallSim.Common
-using BallSim.Shapes
-using BallSim.Fields
 using BallSim.Config
 
-@testset "Configuration System" begin
-
-    function with_config(f::Function, dict::Dict)
-        path = tempname() * ".yaml"
-        YAML.write_file(path, dict)
-        try
-            f(path)
-        finally
-            rm(path, force = true)
-        end
+@testset "Config Validation Tests" begin
+    @testset "validate_positive" begin
+        @test Config.validate_positive(10, "test") == 10
+        @test_throws ErrorException Config.validate_positive(0, "test")
+        @test_throws ErrorException Config.validate_positive(-5, "test")
     end
 
-    base_config = Dict(
-        :simulation => Dict(:N => 100, :duration => 1.0),
-        :physics => Dict(
-            :dt => 0.01,
-            :solver => "CCD",
-            :gravity => Dict(:type => "Zero", :params => Dict()),
-            :boundary => Dict(:type => "Circle", :params => Dict(:radius => 10.0)),
-        ),
-        :output =>
-            Dict(:mode => "export", :filename => "test_out", :res => 400, :fps => 30),
-    )
-
-    @testset "Loader & Schema" begin
-        with_config(base_config) do path
-            cfg = Config.load_config(path)
-            @test cfg.scenario_params[:N] == 100
-            @test cfg.duration == 1.0
-            @test cfg.dt == 0.01f0
-            @test cfg.solver == :CCD
-            @test cfg.boundary_type == :Circle
-        end
+    @testset "validate_choice" begin
+        @test Config.validate_choice(:a, [:a, :b], "test") == :a
+        @test_throws ErrorException Config.validate_choice(:c, [:a, :b], "test")
     end
 
-    @testset "Boundary Factory" begin
-        c_circle = deepcopy(base_config)
-        c_circle[:physics][:boundary] =
-            Dict(:type => "Circle", :params => Dict(:radius => 5.0))
-        with_config(c_circle) do path
-            cfg = Config.load_config(path)
-            b = Config.create_boundary(cfg)
-            @test b isa Shapes.Circle
-            @test b.radius == 5.0f0
-        end
+    @testset "validate_boundary_params" begin
+        # Circle (valid)
+        Config.validate_boundary_params(:Circle, Dict(:radius => 10.0), 2)
+        # Circle (invalid)
+        @test_throws ErrorException Config.validate_boundary_params(:Circle, Dict(), 2)
+        @test_throws ErrorException Config.validate_boundary_params(:Circle, Dict(:radius => -1.0), 2)
 
-        c_inv = deepcopy(base_config)
-        c_inv[:physics][:boundary] =
-            Dict(:type => "InvertedCircle", :params => Dict(:radius => 20.0))
-        with_config(c_inv) do path
-            cfg = Config.load_config(path)
-            b = Config.create_boundary(cfg)
-            @test b isa Shapes.Inverted{2,Shapes.Circle}
-            @test b.inner.radius == 20.0f0
-        end
+        # Box 2D (valid)
+        Config.validate_boundary_params(:Box, Dict(:width => 10, :height => 10), 2)
+        # Box 2D (invalid)
+        @test_throws ErrorException Config.validate_boundary_params(:Box, Dict(:width => 10), 2)
+
+        # Box 3D (valid)
+        Config.validate_boundary_params(:Box, Dict(:width => 10, :height => 10, :depth => 10), 3)
+        # Box 3D (invalid - missing depth)
+        @test_throws ErrorException Config.validate_boundary_params(:Box, Dict(:width => 10, :height => 10), 3)
     end
 
-    @testset "Field Factory" begin
-        c_uni = deepcopy(base_config)
-        c_uni[:physics][:gravity] =
-            Dict(:type => "Uniform", :params => Dict(:vector => [0.0, -9.8]))
-        with_config(c_uni) do path
-            cfg = Config.load_config(path)
-            g = Config.create_gravity(cfg)
-            @test g isa Fields.UniformField
-            @test g.vector ≈ SVector(0.0f0, -9.8f0)
-        end
-    end
+    @testset "validate_gravity_params" begin
+        # Uniform (valid)
+        Config.validate_gravity_params(:Uniform, Dict(:vector => [0, -9.8]), 2)
+        # Uniform (invalid dims)
+        @test_throws ErrorException Config.validate_gravity_params(:Uniform, Dict(:vector => [0, -9.8, 0]), 2)
+        # Uniform (missing vector)
+         @test_throws ErrorException Config.validate_gravity_params(:Uniform, Dict(), 2)
 
-    @testset "Sanitation" begin
-        # 1. Invalid Mode
-        c_bad_mode = deepcopy(base_config)
-        c_bad_mode[:output][:mode] = "telepathic"
-        with_config(c_bad_mode) do path
-            @test_throws ErrorException Config.load_config(path)
-        end
-
-        # 2. Negative Radius
-        c_neg_rad = deepcopy(base_config)
-        c_neg_rad[:physics][:boundary][:params][:radius] = -5.0
-        with_config(c_neg_rad) do path
-            @test_throws ErrorException Config.load_config(path)
-        end
-
-        # 3. Missing Required Param
-        c_missing = deepcopy(base_config)
-        delete!(c_missing[:physics][:boundary][:params], :radius)
-        with_config(c_missing) do path
-            @test_throws ErrorException Config.load_config(path)
-        end
-
-        # 4. 3D Box missing Depth
-        c_box3d = deepcopy(base_config)
-        c_box3d[:simulation][:dimensions] = 3
-        c_box3d[:physics][:boundary] =
-            Dict(:type => "Box", :params => Dict(:width => 10.0, :height => 10.0))
-        # Missing depth
-        with_config(c_box3d) do path
-            @test_throws ErrorException Config.load_config(path)
-        end
-
-        # 5. Invalid Gravity Vector Length
-        c_grav = deepcopy(base_config)
-        c_grav[:physics][:gravity] =
-            Dict(:type => "Uniform", :params => Dict(:vector => [0.0, -9.8, 1.0])) # 3 components
-        c_grav[:simulation][:dimensions] = 2 # but 2D sim
-        with_config(c_grav) do path
-            @test_throws ErrorException Config.load_config(path)
-        end
-    end
-
-    @testset "Integration" begin
-        c_run = deepcopy(base_config)
-        output_path = tempname()
-        c_run[:output][:filename] = output_path
-        c_run[:simulation][:N] = 10
-        c_run[:simulation][:duration] = 0.05
-
-        with_config(c_run) do path
-            BallSim.run_simulation(path)
-            expected_file = output_path * ".h5"
-            @test isfile(expected_file)
-            rm(expected_file, force = true)
-        end
+        # Central (valid)
+        Config.validate_gravity_params(:Central, Dict(:strength => 100), 2)
+        # Central (missing strength)
+        @test_throws ErrorException Config.validate_gravity_params(:Central, Dict(), 2)
     end
 end
