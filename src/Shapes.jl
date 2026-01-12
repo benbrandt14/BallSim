@@ -15,7 +15,10 @@ end
 struct Box <: Common.AbstractBoundary{2}
     width::Float32
     height::Float32
+    half_width::Float32
+    half_height::Float32
 end
+Box(w, h) = Box(w, h, w * 0.5f0, h * 0.5f0)
 
 struct Ellipsoid <: Common.AbstractBoundary{2}
     rx::Float32
@@ -30,7 +33,11 @@ struct Box3D <: Common.AbstractBoundary{3}
     width::Float32
     height::Float32
     depth::Float32
+    half_width::Float32
+    half_height::Float32
+    half_depth::Float32
 end
+Box3D(w, h, d) = Box3D(w, h, d, w * 0.5f0, h * 0.5f0, d * 0.5f0)
 
 # ==============================================================================
 # 2. MODIFIERS
@@ -100,7 +107,7 @@ end
 
 # --- Box ---
 function Common.sdf(b::Box, p::SVector{2}, t)
-    d = abs.(p) .- SVector(b.width/2, b.height/2)
+    d = abs.(p) .- SVector(b.half_width, b.half_height)
     return norm(max.(d, 0.0f0)) + min(maximum(d), 0.0f0)
 end
 
@@ -108,7 +115,7 @@ function Common.normal(b::Box, p::SVector{2}, t)
     # Analytical Gradient
     # Replaces previous numerical gradient which had a syntax error (1e-4f0) and was slow.
 
-    w, h = b.width/2, b.height/2
+    w, h = b.half_width, b.half_height
     d = abs.(p) .- SVector(w, h)
 
     # Check max(d, 0) for positive components (outside box in that axis)
@@ -136,7 +143,7 @@ function Common.normal(b::Box, p::SVector{2}, t)
 end
 
 function Common.detect_collision(b::Box3D, p::SVector{3}, t)
-    w, h, dp = b.width/2, b.height/2, b.depth/2
+    w, h, dp = b.half_width, b.half_height, b.half_depth
     d = abs.(p) .- SVector(w, h, dp)
 
     d_max_x = max(d[1], 0.0f0)
@@ -162,7 +169,7 @@ end
 
 function Common.detect_collision(b::Box, p::SVector{2}, t)
     # Optimization: Calculate d once for both distance and normal
-    w, h = b.width/2, b.height/2
+    w, h = b.half_width, b.half_height
     d = abs.(p) .- SVector(w, h)
 
     d_max_x = max(d[1], 0.0f0)
@@ -257,12 +264,12 @@ julia> Common.sdf(b, SVector(2.0f0, 0.0f0, 0.0f0), 0.0f0)
 ```
 """
 function Common.sdf(b::Box3D, p::SVector{3}, t)
-    d = abs.(p) .- SVector(b.width/2, b.height/2, b.depth/2)
+    d = abs.(p) .- SVector(b.half_width, b.half_height, b.half_depth)
     return norm(max.(d, 0.0f0)) + min(maximum(d), 0.0f0)
 end
 
 function Common.normal(b::Box3D, p::SVector{3}, t)
-    w, h, dp = b.width/2, b.height/2, b.depth/2
+    w, h, dp = b.half_width, b.half_height, b.half_depth
     d = abs.(p) .- SVector(w, h, dp)
 
     d_max_x = max(d[1], 0.0f0)
