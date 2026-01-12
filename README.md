@@ -7,10 +7,12 @@
 
 ```mermaid
 graph TD
-    A[Initialize] --> B[Update Physics]
-    B --> C[Check Collisions]
-    C --> D[Render]
-    D --> B
+    Config[Load Config] --> Init[Initialize System]
+    Init --> Loop{Simulation Loop}
+    Loop --> Physics[Update Physics]
+    Physics --> Collisions[Check Collisions]
+    Collisions --> Render[Render/Export]
+    Render --> Loop
 ```
 
 <img width="1562" height="1514" alt="image" src="https://github.com/user-attachments/assets/335fab92-36f8-40ad-9b98-db4e8cda0d6d" />
@@ -84,7 +86,7 @@ physics:
     params:
       radius: 1.0
 
-# Example 3D Box
+# Example 3D Box (Requires dimensions: 3)
 # boundary:
 #   type: Box
 #   params:

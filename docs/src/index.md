@@ -153,6 +153,14 @@ physics:
     params:
       radius: 1.0
 
+# Example 3D Box (Requires dimensions: 3)
+# boundary:
+#   type: Box
+#   params:
+#     width: 10.0
+#     height: 10.0
+#     depth: 10.0
+
 output:
   mode: render
   res: 800
