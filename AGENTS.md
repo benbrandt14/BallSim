@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Project Context
-**BallSim.jl** is a high-performance, multi-threaded 2D physics engine written in Julia. It uses a Structure-of-Arrays (SoA) data layout and decoupled rendering.
+**BallSim.jl** is a high-performance, multi-threaded 2D and 3D physics engine written in Julia. It uses a Structure-of-Arrays (SoA) data layout and decoupled rendering.
 
 ## Coding Standards
 
