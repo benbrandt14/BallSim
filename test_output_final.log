@@ -1,14 +1,13 @@
 Precompiling project...
-  ✓ InverseFunctions → InverseFunctionsTestExt
-┌ Warning: attempting to remove probably stale pidfile
-│   path = "/home/jules/.julia/compiled/v1.10/Makie/iZ1Bl_q6sPT.ji.pidfile"
-└ @ FileWatching.Pidfile /tmp/julia_bin/share/julia/stdlib/v1.10/FileWatching/src/pidfile.jl:244
+    Makie Being precompiled by another process (pid: 8125, pidfile: /home/jules/.julia/compiled/v1.10/Makie/iZ1Bl_q6sPT.ji.pidfile)
   ✓ Makie
+    CairoMakie Being precompiled by another process (pid: 8125, pidfile: /home/jules/.julia/compiled/v1.10/CairoMakie/9mSey_q6sPT.ji.pidfile)
   ✓ CairoMakie
+    BallSim Being precompiled by another process (pid: 8125, pidfile: /home/jules/.julia/compiled/v1.10/BallSim/eAIZl_q6sPT.ji.pidfile)
   ✓ BallSim
-  4 dependencies successfully precompiled in 418 seconds. 258 already precompiled.
+  3 dependencies successfully precompiled in 234 seconds. 259 already precompiled.
      Testing BallSim
-      Status `/tmp/jl_pAYz9M/Project.toml`
+      Status `/tmp/jl_AQgzvD/Project.toml`
   [4c88cf16] Aqua v0.8.14
   [a1b2c3d4] BallSim v0.0.1 `/app`
   [13f3f980] CairoMakie v0.15.8
@@ -24,7 +23,7 @@ Precompiling project...
   [9a3f8284] Random
   [10745b16] Statistics v1.10.0
   [8dfed614] Test
-      Status `/tmp/jl_pAYz9M/Manifest.toml`
+      Status `/tmp/jl_AQgzvD/Manifest.toml`
   [621f4979] AbstractFFTs v1.5.0
   [1520ce14] AbstractTrees v0.4.5
   [79e6a3ab] Adapt v4.4.0
@@ -286,5 +285,5 @@ WARNING: using deprecated binding ImageCore.permuteddimsview in ImageBase.
 WARNING: ImageBase.permuteddimsview is deprecated, use Base.PermutedDimsArrays.PermutedDimsArray{T, N, perm, iperm, AA} where AA<:(AbstractArray{T, N} where N where T) where iperm where perm where N where T instead.
   likely near /app/test/quality.jl:5
 Test Summary:     | Pass  Total   Time
-BallSim TDD Suite |  345    345  29.4s
+BallSim TDD Suite |  345    345  29.3s
      Testing BallSim tests passed
