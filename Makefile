@@ -18,6 +18,9 @@ run-interactive:
 test:
 	julia --project=. -e 'using Pkg; Pkg.test()'
 
+doctest:
+	julia --project=docs/ -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); using Documenter: DocMeta, doctest; using BallSim; DocMeta.setdocmeta!(BallSim, :DocTestSetup, :(using BallSim, StaticArrays); recursive=true); doctest(BallSim)'
+
 lint:
 	julia --project=tools/maintenance -e 'using Pkg; Pkg.instantiate(); include("../lint.jl")'
 
