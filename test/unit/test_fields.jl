@@ -71,27 +71,23 @@ using LinearAlgebra
             p_inner = SVector(0.1f0, 0.0f0)
 
             # Force should use cutoff distance for magnitude calculation
-            # mag = strength / cutoff^2
-            # dir = diff / cutoff (normalized relative to cutoff scale? No, dir = diff / denom where denom=cutoff)
-            # Wait, implementation: dir = diff / denom. If denom=cutoff, dir is SCALED DOWN.
-            # force = dir * mag * m = (diff / cutoff) * (strength / cutoff^2) * m
+            # Implementation logic check:
+            # denom = max(norm(diff), cutoff)
+            # dir = diff / denom  (NOTE: If denom=cutoff, dir is scaled down, effectively linear spring near center?)
+            # mag = strength / (denom^2)
+            # F = dir * mag * m
 
-            f_inner = field(p_inner, v, m, t)
-
-            expected_mag = (strength / (cutoff^2))
-            # But the direction vector is `diff / cutoff`. Length is 0.1 / 0.5 = 0.2.
-            # So actual force magnitude = 0.2 * expected_mag * m
-
-            # Let's verify exactly
+            # Let's verify exact calc:
             diff = center - p_inner # (-0.1, 0)
             denom = max(norm(diff), cutoff) # 0.5
             dir = diff / denom # (-0.1/0.5, 0) = (-0.2, 0)
             mag = strength / (denom^2) # 10 / 0.25 = 40
             expected_force = dir * mag * m # (-0.2, 0) * 40 * 2 = (-8, 0) * 2 = (-16, 0)
 
+            f_inner = field(p_inner, v, m, t)
             @test f_inner ≈ expected_force
 
-            # Ensure it doesn't explode at 0
+            # Ensure it doesn't explode at 0 (Exact Zero)
             p_zero = SVector(0.0f0, 0.0f0)
             f_zero = field(p_zero, v, m, t)
             @test f_zero == SVector(0.0f0, 0.0f0)
