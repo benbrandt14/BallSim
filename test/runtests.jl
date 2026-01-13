@@ -22,4 +22,5 @@ using BallSim
     include("physics/test_physics.jl")
     include("physics/test_physics_step.jl") # Added
     include("physics/test_collisions_parametric.jl")
+    include("regression/test_golden.jl")
 end

@@ -54,6 +54,12 @@ end
             SVector(0.1f0, 0.1f0),
             SVector(10.0f0, 10.0f0),
         ),
+        (
+            "InvertedBox",
+            Shapes.Inverted(Shapes.Box(4.0f0, 6.0f0)),
+            SVector(0.1f0, 0.1f0), # Inside inner box (Collision)
+            SVector(10.0f0, 10.0f0), # Outside inner box (Valid)
+        ),
     ]
 
     shapes_3d = [
@@ -74,6 +80,12 @@ end
             Shapes.Inverted(Shapes.Circle3D(5.0f0)),
             SVector(0.1f0, 0.1f0, 0.1f0),
             SVector(10.0f0, 10.0f0, 10.0f0),
+        ),
+        (
+            "InvertedBox3D",
+            Shapes.Inverted(Shapes.Box3D(4.0f0, 6.0f0, 2.0f0)),
+            SVector(0.1f0, 0.1f0, 0.1f0), # Inside inner box (Collision)
+            SVector(10.0f0, 10.0f0, 10.0f0), # Outside inner box (Valid)
         ),
     ]
 
