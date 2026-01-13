@@ -32,6 +32,10 @@ struct Box3D <: Common.AbstractBoundary{3}
     depth::Float32
 end
 
+struct Polygon{N} <: Common.AbstractBoundary{2}
+    vertices::SVector{N, SVector{2, Float32}}
+end
+
 # ==============================================================================
 # 2. MODIFIERS
 # ==============================================================================
@@ -343,6 +347,168 @@ function Common.detect_collision(b::Inverted{3,Circle3D}, p::SVector{3}, t)
         return (true, dist, n)
     else
         return (false, 0.0f0, zero(SVector{3,Float32}))
+    end
+end
+
+# --- Polygon ---
+
+function Common.sdf(b::Polygon{N}, p::SVector{2}, t) where N
+    d2_min = Inf32
+    s = 1.0f0
+
+    for i in 1:N
+        j = (i == 1) ? N : i - 1
+        vi = b.vertices[i]
+        vj = b.vertices[j]
+
+        e = vj - vi
+        w = p - vi
+
+        h = clamp(dot(w, e) / dot(e, e), 0.0f0, 1.0f0)
+        b_vec = w - e * h
+        d2 = dot(b_vec, b_vec)
+
+        if d2 < d2_min
+            d2_min = d2
+        end
+
+        cond1 = p[2] >= vi[2]
+        cond2 = p[2] < vj[2]
+        cond3 = (e[1] * w[2]) > (e[2] * w[1])
+
+        if (cond1 && cond2 && cond3) || (!cond1 && !cond2 && !cond3)
+            s = -s
+        end
+    end
+
+    return s * sqrt(d2_min)
+end
+
+function Common.normal(b::Polygon{N}, p::SVector{2}, t) where N
+    d2_min = Inf32
+    closest_p = SVector(0f0, 0f0)
+    s = 1.0f0
+
+    for i in 1:N
+        j = (i == 1) ? N : i - 1
+        vi = b.vertices[i]
+        vj = b.vertices[j]
+
+        e = vj - vi
+        w = p - vi
+
+        h = clamp(dot(w, e) / dot(e, e), 0.0f0, 1.0f0)
+        cp = vi + e * h
+        d2 = dot(p - cp, p - cp)
+
+        if d2 < d2_min
+            d2_min = d2
+            closest_p = cp
+        end
+
+        cond1 = p[2] >= vi[2]
+        cond2 = p[2] < vj[2]
+        cond3 = (e[1] * w[2]) > (e[2] * w[1])
+
+        if (cond1 && cond2 && cond3) || (!cond1 && !cond2 && !cond3)
+            s = -s
+        end
+    end
+
+    dist = sqrt(d2_min)
+    if dist < 1.0f-6
+        return SVector(1.0f0, 0.0f0)
+    end
+
+    n = (p - closest_p) / dist
+    return (s < 0) ? -n : n
+end
+
+function Common.detect_collision(b::Polygon{N}, p::SVector{2}, t) where N
+    d2_min = Inf32
+    closest_p = SVector(0f0, 0f0)
+    s = 1.0f0
+
+    for i in 1:N
+        j = (i == 1) ? N : i - 1
+        vi = b.vertices[i]
+        vj = b.vertices[j]
+
+        e = vj - vi
+        w = p - vi
+
+        h = clamp(dot(w, e) / dot(e, e), 0.0f0, 1.0f0)
+        cp = vi + e * h
+        d2 = dot(p - cp, p - cp)
+
+        if d2 < d2_min
+            d2_min = d2
+            closest_p = cp
+        end
+
+        cond1 = p[2] >= vi[2]
+        cond2 = p[2] < vj[2]
+        cond3 = (e[1] * w[2]) > (e[2] * w[1])
+
+        if (cond1 && cond2 && cond3) || (!cond1 && !cond2 && !cond3)
+            s = -s
+        end
+    end
+
+    if s < 0
+        return (false, 0.0f0, zero(SVector{2,Float32}))
+    else
+        dist = sqrt(d2_min)
+        if dist < 1.0f-6
+             return (false, 0.0f0, zero(SVector{2,Float32}))
+        end
+        n = (p - closest_p) / dist
+        return (true, dist, n)
+    end
+end
+
+# --- Rotating ---
+
+struct Rotating{D,B<:Common.AbstractBoundary{D}} <: Common.AbstractBoundary{D}
+    inner::B
+    omega::Float32
+end
+
+function Common.sdf(b::Rotating{2}, p::SVector{2}, t)
+    theta = -b.omega * t
+    c, s = cos(theta), sin(theta)
+    p_rot = SVector(c*p[1] - s*p[2], s*p[1] + c*p[2])
+    return Common.sdf(b.inner, p_rot, t)
+end
+
+function Common.normal(b::Rotating{2}, p::SVector{2}, t)
+    theta = -b.omega * t
+    c, s = cos(theta), sin(theta)
+    p_rot = SVector(c*p[1] - s*p[2], s*p[1] + c*p[2])
+
+    n_local = Common.normal(b.inner, p_rot, t)
+
+    theta_back = b.omega * t
+    cb, sb = cos(theta_back), sin(theta_back)
+    nx, ny = n_local[1], n_local[2]
+    return SVector(cb*nx - sb*ny, sb*nx + cb*ny)
+end
+
+function Common.detect_collision(b::Rotating{2}, p::SVector{2}, t)
+    theta = -b.omega * t
+    c, s = cos(theta), sin(theta)
+    p_rot = SVector(c*p[1] - s*p[2], s*p[1] + c*p[2])
+
+    collided, dist, n_local = Common.detect_collision(b.inner, p_rot, t)
+
+    if collided
+        theta_back = b.omega * t
+        cb, sb = cos(theta_back), sin(theta_back)
+        nx, ny = n_local[1], n_local[2]
+        n_world = SVector(cb*nx - sb*ny, sb*nx + cb*ny)
+        return (true, dist, n_world)
+    else
+        return (false, 0.0f0, zero(SVector{2,Float32}))
     end
 end
 
