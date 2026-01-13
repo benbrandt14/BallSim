@@ -92,7 +92,9 @@ function Common.detect_collision(b::Circle, p::SVector{2}, t)
         d = sqrt(d2)
         dist = d - b.radius
         # normal = p / d
-        return (true, dist, p / d)
+        # Optimization: Use multiplication by inverse distance to save division
+        inv_d = 1.0f0 / d
+        return (true, dist, p * inv_d)
     else
         return (false, 0.0f0, zero(SVector{2,Float32}))
     end
@@ -230,7 +232,8 @@ function Common.detect_collision(b::Circle3D, p::SVector{3}, t)
     if d2 > r2
         d = sqrt(d2)
         dist = d - b.radius
-        return (true, dist, p / d)
+        inv_d = 1.0f0 / d
+        return (true, dist, p * inv_d)
     else
         return (false, 0.0f0, zero(SVector{3,Float32}))
     end
@@ -319,7 +322,8 @@ function Common.detect_collision(b::Inverted{2,Circle}, p::SVector{2}, t)
         if d < 1.0f-6
             n = SVector(0.0f0, 1.0f0)
         else
-            n = -p / d
+            inv_d = 1.0f0 / d
+            n = -p * inv_d
         end
         return (true, dist, SVector{2,Float32}(n))
     else
@@ -338,11 +342,52 @@ function Common.detect_collision(b::Inverted{3,Circle3D}, p::SVector{3}, t)
         if d < 1e-6f0
             n = SVector(0.0f0, 0.0f0, 1.0f0)
         else
-            n = -p / d
+            inv_d = 1.0f0 / d
+            n = -p * inv_d
         end
         return (true, dist, n)
     else
         return (false, 0.0f0, zero(SVector{3,Float32}))
+    end
+end
+
+# --- Ellipsoid Optimization ---
+function Common.detect_collision(b::Ellipsoid, p::SVector{2}, t)
+    # Optimization: Reuses gradients to avoid redundant sqrt and div in normal calculation
+    # sdf computes grad_len. normal = grad / grad_len.
+    # We can compute both in one pass.
+
+    rx, ry = b.rx, b.ry
+    k = norm(p ./ SVector(rx, ry))
+
+    # Handle singularity at center
+    if k < 1e-6
+        # Deep inside, so no collision (unless inverted, but this is standard Ellipsoid)
+        # Standard Ellipsoid is usually a container?
+        # Wait, Box and Circle are containers. Ellipsoid likely too.
+        # sdf(Ellipsoid) returns negative inside.
+        # detect_collision checks dist > 0.
+        # So inside is safe.
+        return (false, 0.0f0, zero(SVector{2,Float32}))
+    end
+
+    # ∇k = ( x / (k*rx^2), y / (k*ry^2) )
+    gx = p[1] / (k * rx^2)
+    gy = p[2] / (k * ry^2)
+    grad_len_sq = gx^2 + gy^2
+    grad_len = sqrt(grad_len_sq)
+
+    dist = (k - 1.0f0) / grad_len
+
+    if dist > 0
+        # Normal = grad / grad_len
+        inv_grad_len = 1.0f0 / grad_len
+        nx = gx * inv_grad_len
+        ny = gy * inv_grad_len
+        n = SVector(nx, ny)
+        return (true, dist, n)
+    else
+        return (false, 0.0f0, zero(SVector{2,Float32}))
     end
 end
 
