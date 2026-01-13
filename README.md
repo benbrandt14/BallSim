@@ -7,10 +7,12 @@
 
 ```mermaid
 graph TD
-    A[Initialize] --> B[Update Physics]
-    B --> C[Check Collisions]
-    C --> D[Render]
-    D --> B
+    Config[Load Config] --> Init[Initialize System]
+    Init --> Loop{Simulation Loop}
+    Loop --> Physics[Update Physics]
+    Physics --> Collisions[Check Collisions]
+    Collisions --> Render[Render/Export]
+    Render --> Loop
 ```
 
 <img width="1562" height="1514" alt="image" src="https://github.com/user-attachments/assets/335fab92-36f8-40ad-9b98-db4e8cda0d6d" />
@@ -46,7 +48,15 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 ### 1. Command Line
 
-Run the simulation using the default `config.yaml`:
+You can use the provided `Makefile` for convenience:
+
+```bash
+make run-render       # Runs headless simulation
+make run-interactive  # Runs interactive simulation with GLMakie
+make run-export       # Runs simulation and exports to HDF5
+```
+
+Or run directly with Julia:
 
 ```bash
 julia --project=. sim.jl
@@ -84,7 +94,7 @@ physics:
     params:
       radius: 1.0
 
-# Example 3D Box
+# Example 3D Box (Requires dimensions: 3)
 # boundary:
 #   type: Box
 #   params:
@@ -236,7 +246,14 @@ src/
 ├── Vis.jl           # Real-time Visualization logic
 └── SimIO.jl         # HDF5 Input/Output
 
+ext/
+└── BallSimInteractiveExt.jl # GLMakie extension for interactive mode
+
+docs/                # Documentation source (Documenter.jl)
 tools/
 └── render_frame.jl  # Standalone High-Res Renderer
 
+Makefile             # Build and Run targets
+setup.sh             # Setup script
+sim.jl               # CLI Entry point
 ```
