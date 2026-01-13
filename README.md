@@ -48,7 +48,15 @@ julia --project=. -e 'using Pkg; Pkg.instantiate()'
 
 ### 1. Command Line
 
-Run the simulation using the default `config.yaml`:
+You can use the provided `Makefile` for convenience:
+
+```bash
+make run-render       # Runs headless simulation
+make run-interactive  # Runs interactive simulation with GLMakie
+make run-export       # Runs simulation and exports to HDF5
+```
+
+Or run directly with Julia:
 
 ```bash
 julia --project=. sim.jl
@@ -238,7 +246,14 @@ src/
 ├── Vis.jl           # Real-time Visualization logic
 └── SimIO.jl         # HDF5 Input/Output
 
+ext/
+└── BallSimInteractiveExt.jl # GLMakie extension for interactive mode
+
+docs/                # Documentation source (Documenter.jl)
 tools/
 └── render_frame.jl  # Standalone High-Res Renderer
 
+Makefile             # Build and Run targets
+setup.sh             # Setup script
+sim.jl               # CLI Entry point
 ```

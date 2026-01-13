@@ -64,7 +64,12 @@ function my_func(x) ...
 ```
 
 **Running Doctests:**
-You can run doctests locally to verify them before pushing:
+You can run doctests locally to verify them before pushing using the Makefile:
+```bash
+make doctest
+```
+
+Or manually:
 ```bash
 julia --project=docs/ -e '
   using Pkg
