@@ -33,7 +33,16 @@ If you need to debug the environment or verify file integrity (e.g. check for mo
 ```bash
 julia --project=. test/debug_tool.jl
 ```
-This will print environment details, git status, and hashes of critical source files.
+This tool provides a comprehensive report including:
+*   Julia Version and Environment Info
+*   Git Status
+*   Project Dependencies Status
+*   Source File Listing with Sizes
+*   Hashes of Critical Source Files
+*   `config.yaml` Validation Check
+*   Last 20 lines of `test_output.log` (if available)
+
+Use this output to diagnose environment issues, file corruption, or configuration errors.
 
 ### Debugging with Simulation
 If you need to debug the simulation runtime environment (e.g. check if `Physics.step!` works without error and see the log output), run:
