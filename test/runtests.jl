@@ -15,7 +15,6 @@ using BallSim
     include("shapes/test_shapes_parametric.jl")
     include("vis/test_projection.jl")
     include("unit/test_fields.jl")
-    include("unit/test_demo_features.jl")
     include("unit/test_config.jl")
     include("unit/test_io.jl")
 

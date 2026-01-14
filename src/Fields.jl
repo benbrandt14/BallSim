@@ -67,62 +67,6 @@ function (f::CentralField)(p, v, m, t)
     return force_vec * m
 end
 
-"""
-    VortexField{D, T}
-
-A force field that applies a tangential force around a center.
-F = (strength / r^2) * tangent_vector
-
-# Example
-```jldoctest
-julia> using BallSim, StaticArrays
-
-julia> v = Fields.VortexField(SVector(0.0f0, 0.0f0), 1.0f0);
-
-julia> v(SVector(1.0f0, 0.0f0), SVector(0f0,0f0), 1.0f0, 0.0f0)
-2-element StaticArraysCore.SVector{2, Float32} with indices SOneTo(2):
- 0.0
- 1.0
-```
-"""
-struct VortexField{D,T} <: AbstractField
-    center::SVector{D,T}
-    strength::T
-    cutoff::T
-end
-VortexField(center, strength; cutoff = 0.1f0) = VortexField(center, strength, cutoff)
-
-function (f::VortexField{2})(p, v, m, t)
-    diff = p - f.center
-    dist_sq = dot(diff, diff)
-    dist = sqrt(dist_sq)
-    denom = max(dist, f.cutoff)
-
-    # Tangent: (-y, x)
-    # Normalized: (-y, x) / dist = (-y/dist, x/dist)
-    # Note: diff is p - center.
-    dir = SVector(-diff[2], diff[1]) / denom
-
-    mag = f.strength / (denom^2)
-
-    return dir * mag * m
-end
-
-function (f::VortexField{3})(p, v, m, t)
-    # Cylindrical vortex around Z axis passing through center
-    diff = p - f.center
-
-    # Distance in XY plane
-    dist_xy = sqrt(diff[1]^2 + diff[2]^2)
-    denom = max(dist_xy, f.cutoff)
-
-    dir = SVector(-diff[2], diff[1], 0.0f0) / denom
-
-    mag = f.strength / (denom^2)
-
-    return dir * mag * m
-end
-
 # ==============================================================================
 # COMPOSITE FIELD
 # ==============================================================================
