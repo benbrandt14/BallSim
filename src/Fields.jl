@@ -56,14 +56,16 @@ function (f::CentralField)(p, v, m, t)
     denom = max(dist, f.cutoff)
 
     # F = strength * direction
-    # Attractive: points to center
-    dir = diff / denom
+    # mag = strength / r^2
+    # F = (diff / denom) * (strength / denom^2) = diff * (strength / denom^3)
+    # Optimization: Calculate scalar first to reduce vector ops
+    scalar = f.strength / (denom^3)
 
-    # F = k / r^2 (Gravity/Magnetic) or F = k * r (Spring)?
-    # Let's assume Inverse Square Law for "Fields"
-    mag = f.strength / (denom^2)
+    force_vec = diff * scalar
+    if f.mode != :attractor
+        force_vec = -force_vec
+    end
 
-    force_vec = f.mode == :attractor ? (dir * mag) : -(dir * mag)
     return force_vec * m
 end
 
@@ -99,13 +101,13 @@ function (f::VortexField{2})(p, v, m, t)
     denom = max(dist, f.cutoff)
 
     # Tangent: (-y, x)
-    # Normalized: (-y, x) / dist = (-y/dist, x/dist)
-    # Note: diff is p - center.
-    dir = SVector(-diff[2], diff[1]) / denom
+    # F = dir * mag = (tangent / denom) * (strength / denom^2)
+    # F = tangent * (strength / denom^3)
 
-    mag = f.strength / (denom^2)
+    scalar = f.strength / (denom^3)
+    tangent = SVector(-diff[2], diff[1])
 
-    return dir * mag * m
+    return tangent * (scalar * m)
 end
 
 function (f::VortexField{3})(p, v, m, t)
@@ -116,11 +118,10 @@ function (f::VortexField{3})(p, v, m, t)
     dist_xy = sqrt(diff[1]^2 + diff[2]^2)
     denom = max(dist_xy, f.cutoff)
 
-    dir = SVector(-diff[2], diff[1], 0.0f0) / denom
+    scalar = f.strength / (denom^3)
+    tangent = SVector(-diff[2], diff[1], 0.0f0)
 
-    mag = f.strength / (denom^2)
-
-    return dir * mag * m
+    return tangent * (scalar * m)
 end
 
 # ==============================================================================
