@@ -56,15 +56,72 @@ function (f::CentralField)(p, v, m, t)
     denom = max(dist, f.cutoff)
 
     # F = strength * direction
-    # Attractive: points to center
-    dir = diff / denom
+    # mag = strength / r^2
+    # F = (diff / denom) * (strength / denom^2) = diff * (strength / denom^3)
+    # Optimization: Calculate scalar first to reduce vector ops
+    scalar = f.strength / (denom^3)
 
-    # F = k / r^2 (Gravity/Magnetic) or F = k * r (Spring)?
-    # Let's assume Inverse Square Law for "Fields"
-    mag = f.strength / (denom^2)
+    force_vec = diff * scalar
+    if f.mode != :attractor
+        force_vec = -force_vec
+    end
 
-    force_vec = f.mode == :attractor ? (dir * mag) : -(dir * mag)
     return force_vec * m
+end
+
+"""
+    VortexField{D, T}
+
+A force field that applies a tangential force around a center.
+F = (strength / r^2) * tangent_vector
+
+# Example
+```jldoctest
+julia> using BallSim, StaticArrays
+
+julia> v = Fields.VortexField(SVector(0.0f0, 0.0f0), 1.0f0);
+
+julia> v(SVector(1.0f0, 0.0f0), SVector(0f0,0f0), 1.0f0, 0.0f0)
+2-element SVector{2, Float32} with indices SOneTo(2):
+ -0.0
+  1.0
+```
+"""
+struct VortexField{D,T} <: AbstractField
+    center::SVector{D,T}
+    strength::T
+    cutoff::T
+end
+VortexField(center, strength; cutoff = 0.1f0) = VortexField(center, strength, cutoff)
+
+function (f::VortexField{2})(p, v, m, t)
+    diff = p - f.center
+    dist_sq = dot(diff, diff)
+    dist = sqrt(dist_sq)
+    denom = max(dist, f.cutoff)
+
+    # Tangent: (-y, x)
+    # F = dir * mag = (tangent / denom) * (strength / denom^2)
+    # F = tangent * (strength / denom^3)
+
+    scalar = f.strength / (denom^3)
+    tangent = SVector(-diff[2], diff[1])
+
+    return tangent * (scalar * m)
+end
+
+function (f::VortexField{3})(p, v, m, t)
+    # Cylindrical vortex around Z axis passing through center
+    diff = p - f.center
+
+    # Distance in XY plane
+    dist_xy = sqrt(diff[1]^2 + diff[2]^2)
+    denom = max(dist_xy, f.cutoff)
+
+    scalar = f.strength / (denom^3)
+    tangent = SVector(-diff[2], diff[1], 0.0f0)
+
+    return tangent * (scalar * m)
 end
 
 # ==============================================================================
