@@ -105,4 +105,44 @@ function Common.get_default_solver(scen::SpiralScenario3D)
     return Physics.CCDSolver(0.002f0, 1.0f0, 8)
 end
 
+# --- Tumbler Scenario ---
+
+struct TumblerScenario <: Common.AbstractScenario{2}
+    N::Int
+end
+TumblerScenario(; N = 1000) = TumblerScenario(N)
+
+function initialize!(sys::Common.BallSystem{2,T,S}, scen::TumblerScenario) where {T,S}
+    # Initialize in a box [-2, 2]
+    width = 4.0f0
+
+    # Grid layout to avoid initial overlap
+    rows = ceil(Int, sqrt(scen.N))
+    spacing = width / rows
+
+    offset = -width / 2.0f0 + spacing / 2.0f0
+
+    Threads.@threads for i = 1:scen.N
+        sys.data.active[i] = true
+        sys.data.mass[i] = 1.0f0
+
+        r = (i - 1) % rows
+        c = (i - 1) ÷ rows
+
+        x = offset + c * spacing
+        y = offset + r * spacing
+
+        sys.data.pos[i] = SVector(x, y)
+        sys.data.vel[i] = SVector(0.0f0, 0.0f0)
+    end
+end
+
+function Common.get_force_field(scen::TumblerScenario)
+    return Fields.UniformField(SVector(0.0f0, -9.8f0))
+end
+
+function Common.get_default_solver(scen::TumblerScenario)
+    return Physics.CCDSolver(0.002f0, 0.5f0, 8)
+end
+
 end

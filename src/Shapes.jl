@@ -12,6 +12,146 @@ struct Circle <: Common.AbstractBoundary{2}
     radius::Float32
 end
 
+# --- ConvexPolygon ---
+
+struct ConvexPolygon <: Common.AbstractBoundary{2}
+    vertices::Vector{SVector{2,Float32}}
+    normals::Vector{SVector{2,Float32}}
+end
+
+function ConvexPolygon(vertices::Vector{SVector{2,Float32}})
+    n = length(vertices)
+    normals = Vector{SVector{2,Float32}}(undef, n)
+    for i in 1:n
+        p1 = vertices[i]
+        p2 = vertices[mod1(i + 1, n)]
+        edge = p2 - p1
+        # Normal (dy, -dx) for CCW
+        norm_v = normalize(SVector(edge[2], -edge[1]))
+        normals[i] = norm_v
+    end
+    return ConvexPolygon(vertices, normals)
+end
+
+function Common.sdf(b::ConvexPolygon, p::SVector{2}, t)
+    # Check max plane distance
+    max_d = -Inf32
+    for i in 1:length(b.vertices)
+        v = b.vertices[i]
+        n = b.normals[i]
+        d = dot(p - v, n)
+        if d > max_d
+            max_d = d
+        end
+    end
+
+    if max_d <= 0
+        # Inside
+        return max_d
+    else
+        # Outside: Find exact distance to closest segment
+        min_dist_sq = Inf32
+        for i in 1:length(b.vertices)
+            v1 = b.vertices[i]
+            v2 = b.vertices[mod1(i + 1, length(b.vertices))]
+
+            # Distance to segment
+            ab = v2 - v1
+            ap = p - v1
+            t_seg = clamp(dot(ap, ab) / dot(ab, ab), 0.0f0, 1.0f0)
+            closest = v1 + t_seg * ab
+            dist_sq = dot(p - closest, p - closest)
+
+            if dist_sq < min_dist_sq
+                min_dist_sq = dist_sq
+            end
+        end
+        return sqrt(min_dist_sq)
+    end
+end
+
+function Common.normal(b::ConvexPolygon, p::SVector{2}, t)
+    # If inside, normal of edge with max plane dist
+    # If outside, direction from closest point on boundary
+
+    max_d = -Inf32
+    best_idx = 0
+
+    for i in 1:length(b.vertices)
+        v = b.vertices[i]
+        n = b.normals[i]
+        d = dot(p - v, n)
+        if d > max_d
+            max_d = d
+            best_idx = i
+        end
+    end
+
+    if max_d <= 0
+        # Inside
+        return b.normals[best_idx]
+    else
+        # Outside: Find closest point
+        min_dist_sq = Inf32
+        closest_point = p # default
+
+        for i in 1:length(b.vertices)
+            v1 = b.vertices[i]
+            v2 = b.vertices[mod1(i + 1, length(b.vertices))]
+
+            ab = v2 - v1
+            ap = p - v1
+            t_seg = clamp(dot(ap, ab) / dot(ab, ab), 0.0f0, 1.0f0)
+            c = v1 + t_seg * ab
+            dist_sq = dot(p - c, p - c)
+
+            if dist_sq < min_dist_sq
+                min_dist_sq = dist_sq
+                closest_point = c
+            end
+        end
+
+        diff = p - closest_point
+        # Normalize diff. If diff is zero (on boundary), use max_d normal
+        len = norm(diff)
+        if len < 1e-6f0
+            return b.normals[best_idx]
+        else
+            return diff / len
+        end
+    end
+end
+
+# --- Rotating ---
+
+struct Rotating{D,B<:Common.AbstractBoundary{D}} <: Common.AbstractBoundary{D}
+    inner::B
+    angular_velocity::Float32
+end
+
+function Common.detect_collision(b::Rotating{2}, p::SVector{2}, t)
+    theta = b.angular_velocity * t
+    s, c = sincos(theta)
+
+    # Rotate p to local space (Reverse rotation)
+    # p_local = R(-theta) * p
+    px = p[1] * c + p[2] * s
+    py = -p[1] * s + p[2] * c
+    p_local = SVector(px, py)
+
+    collided, dist, n_local = Common.detect_collision(b.inner, p_local, t)
+
+    if collided
+        # Rotate normal back to world space
+        # n = R(theta) * n_local
+        nx = n_local[1] * c - n_local[2] * s
+        ny = n_local[1] * s + n_local[2] * c
+        return (true, dist, SVector(nx, ny))
+    else
+        return (false, 0.0f0, zero(SVector{2,Float32}))
+    end
+end
+
 struct Box <: Common.AbstractBoundary{2}
     width::Float32
     height::Float32
