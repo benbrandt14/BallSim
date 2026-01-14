@@ -12,7 +12,7 @@ Inspired by [the work of Alexander Gustafsson](https://www.youtube.com/watch?v=V
 
 * **Performance:** Structure-of-Arrays (SoA) data layout with multi-threaded physics kernels.
 * **Modular Architecture:** Physics, Geometry, and Rendering are strictly decoupled.
-* **Declarative Configuration:** Full simulation control via JSON files (solvers, fields, boundaries).
+* **Declarative Configuration:** Full simulation control via YAML files (solvers, fields, boundaries).
 * **"Darkroom" Rendering:** Headless HDF5 export pipeline with a separate high-res rendering tool (supports Logarithmic Tone Mapping).
 * **Extensible:** Easy interfaces for defining new Shapes, Force Fields, and Scenarios.
 
