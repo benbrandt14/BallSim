@@ -80,9 +80,9 @@ julia> using BallSim, StaticArrays
 julia> v = Fields.VortexField(SVector(0.0f0, 0.0f0), 1.0f0);
 
 julia> v(SVector(1.0f0, 0.0f0), SVector(0f0,0f0), 1.0f0, 0.0f0)
-2-element StaticArraysCore.SVector{2, Float32} with indices SOneTo(2):
- 0.0
- 1.0
+2-element SVector{2, Float32} with indices SOneTo(2):
+ -0.0
+  1.0
 ```
 """
 struct VortexField{D,T} <: AbstractField
