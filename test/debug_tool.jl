@@ -1,6 +1,8 @@
 using Test
 using Pkg
 using SHA
+using YAML
+using Dates
 
 """
     generate_agent_debug_info()
@@ -9,12 +11,15 @@ Generates a diagnostic string containing environment information useful for AI a
 Includes:
 - Julia Version
 - Package Dependencies & Status
-- Hashes of critical files (src/Physics.jl, src/Common.jl)
-- Current Working Directory
+- Hashes of critical files
+- Source File Listing
+- Config Validation
+- Recent Logs
 """
 function generate_agent_debug_info()
     io = IOBuffer()
     println(io, "=== Agent Debug Info ===")
+    println(io, "Timestamp: ", Dates.now())
     println(io, "Julia Version: ", VERSION)
     println(io, "CWD: ", pwd())
 
@@ -33,6 +38,19 @@ function generate_agent_debug_info()
         println(io, "Error checking Pkg status: $e")
     end
 
+    println(io, "\n--- Source File Listing ---")
+    try
+        for (root, dirs, files) in walkdir("src")
+            for file in files
+                path = joinpath(root, file)
+                size = filesize(path)
+                println(io, "$path ($size bytes)")
+            end
+        end
+    catch e
+        println(io, "Error listing files: $e")
+    end
+
     println(io, "\n--- Critical File Hashes ---")
     files = [
         "src/Physics.jl",
@@ -48,6 +66,40 @@ function generate_agent_debug_info()
         else
             println(io, "$f: MISSING")
         end
+    end
+
+    println(io, "\n--- Config Check (config.yaml) ---")
+    if isfile("config.yaml")
+        try
+            cfg = YAML.load_file("config.yaml")
+            println(io, "config.yaml exists and parses successfully.")
+            if haskey(cfg, "simulation") && haskey(cfg["simulation"], "type")
+                println(io, "Scenario: ", cfg["simulation"]["type"])
+            else
+                println(io, "Warning: 'simulation.type' key missing.")
+            end
+        catch e
+            println(io, "Error parsing config.yaml: $e")
+        end
+    else
+        println(io, "config.yaml: MISSING")
+    end
+
+    println(io, "\n--- Recent Test Logs (test_output.log) ---")
+    if isfile("test_output.log")
+        try
+            lines = readlines("test_output.log")
+            n = length(lines)
+            start_idx = max(1, n - 20)
+            println(io, "Last $(n - start_idx + 1) lines:")
+            for i in start_idx:n
+                println(io, lines[i])
+            end
+        catch e
+            println(io, "Error reading test_output.log: $e")
+        end
+    else
+        println(io, "test_output.log: NOT FOUND")
     end
 
     return String(take!(io))
