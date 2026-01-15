@@ -7,10 +7,12 @@ This document outlines the strategic direction for `BallSim.jl`. It serves as a 
 ### Solvers
 *   **Symplectic Integration**: Implement symplectic integrators (e.g., Velocity Verlet, Leapfrog, Forest-Ruth) to better conserve energy in long-running simulations.
     *   *Research*: See Störmer-Verlet methods and their properties for Hamiltonian systems.
-*   **Rigid Body Dynamics**: Extend particle physics to support rigid bodies with rotational dynamics (quaternions, inertia tensors).
-*   **Constraints**: Add support for distance joints, hinges, and springs between particles.
+### Advanced Particle Dynamics
+*   **Particle Spin**: Implement spin properties for particles that can interact with fields (e.g., magnetic fields) or other particles.
+*   **Procedural Initialization**: Develop tools for procedural initialization of particle properties, such as spin, mass, and charge.
 
 ### Collision Detection
+*   **Focus**: Prioritize algorithms that scale to massive numbers of particles ($N > 10^6$).
 *   **Spatial Partitioning**: Implement broad-phase algorithms to reduce collision checks from $O(N^2)$ to $O(N \log N)$ or $O(N)$.
     *   **Spatial Hashing**: Efficient for uniform particle distributions.
     *   **Quadtrees (2D) / Octrees (3D)**: Adaptive spatial subdivision.
