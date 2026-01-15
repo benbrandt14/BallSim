@@ -114,7 +114,7 @@ function Common.normal(b::ConvexPolygon, p::SVector{2}, t)
         diff = p - closest_point
         # Normalize diff. If diff is zero (on boundary), use max_d normal
         len = norm(diff)
-        if len < 1f-6
+        if len < 1e-6f0
             return b.normals[best_idx]
         else
             return diff / len
@@ -475,7 +475,7 @@ function Common.detect_collision(b::Inverted{3,Circle3D}, p::SVector{3}, t)
         d = sqrt(d2)
         dist = b.inner.radius - d
 
-        if d < 1e-6f0
+        if d < 1.0f-6
             n = SVector(0.0f0, 0.0f0, 1.0f0)
         else
             n = -p / d
@@ -484,41 +484,6 @@ function Common.detect_collision(b::Inverted{3,Circle3D}, p::SVector{3}, t)
     else
         return (false, 0.0f0, zero(SVector{3,Float32}))
     end
-end
-
-function Common.detect_collision(b::Inverted{2,ConvexPolygon}, p::SVector{2}, t)
-    # Optimized collision for Inverted Polygon (Obstacle).
-    # Safe if Outside (d > 0 for any plane).
-    # Collision if Inside (d <= 0 for all planes).
-
-    poly = b.inner
-    max_d = -Inf32
-    best_idx = 1
-
-    for i in 1:length(poly.vertices)
-        v = poly.vertices[i]
-        n = poly.normals[i]
-        d = dot(p - v, n)
-
-        # Early Exit: If we are outside any plane, we are safe.
-        if d > 0
-            return (false, 0.0f0, zero(SVector{2,Float32}))
-        end
-
-        if d > max_d
-            max_d = d
-            best_idx = i
-        end
-    end
-
-    # Inside -> Collision
-    # max_d is negative distance (penetration).
-    dist = -max_d
-    # Normal points towards forbidden region (IN).
-    # Poly normal points OUT.
-    n = -poly.normals[best_idx]
-
-    return (true, dist, n)
 end
 
 end

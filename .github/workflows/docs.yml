@@ -34,5 +34,5 @@ jobs:
           julia --project=docs/ -e '
             using Documenter: DocMeta, doctest
             using BallSim
-            DocMeta.setdocmeta!(BallSim, :DocTestSetup, :(using BallSim, StaticArrays); recursive=true)
+            DocMeta.setdocmeta!(BallSim, :DocTestSetup, :(using BallSim); recursive=true)
             doctest(BallSim)'
