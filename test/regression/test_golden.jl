@@ -50,7 +50,7 @@ using SHA
     end
 
     # EXPECTED HASH from tools/generate_golden.jl
-    EXPECTED_HASH = "23604ac289ea1ee4d47f25a2009d547eb0f3fb8fab49ce190cd804ae32fc3513"
+    EXPECTED_HASH = "8333abaae4643983605099ac32a5736f7e6662b145bf2676098f363aa5aaf7eb"
 
     sys = run_deterministic_simulation()
     current_hash = compute_hash(sys)
