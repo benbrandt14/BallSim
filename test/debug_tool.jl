@@ -9,7 +9,7 @@ using Dates
 
 Generates a diagnostic string containing environment information useful for AI agents debugging the system.
 Includes:
-- Julia Version
+- Julia Version & Environment Variables
 - Package Dependencies & Status
 - Hashes of critical files
 - Source File Listing
@@ -22,6 +22,17 @@ function generate_agent_debug_info()
     println(io, "Timestamp: ", Dates.now())
     println(io, "Julia Version: ", VERSION)
     println(io, "CWD: ", pwd())
+    println(io, "Threads: ", Threads.nthreads())
+
+    println(io, "\n--- Environment Variables ---")
+    env_vars = ["JULIA_NUM_THREADS", "JULIA_LOAD_PATH", "JULIA_DEPOT_PATH", "CUDA_VISIBLE_DEVICES", "PATH"]
+    for var in env_vars
+        if haskey(ENV, var)
+            println(io, "$var: ", ENV[var])
+        else
+            println(io, "$var: (not set)")
+        end
+    end
 
     println(io, "\n--- Git Status ---")
     try
@@ -111,6 +122,7 @@ end
     @test contains(info, "Agent Debug Info")
     @test contains(info, "Julia Version")
     @test contains(info, "src/Physics.jl")
+    @test contains(info, "Threads:")
 
     # We print it so the agent (me) can see it in the logs if needed,
     # and to fulfill the "return text for agents" requirement.
