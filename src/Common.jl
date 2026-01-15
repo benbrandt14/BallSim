@@ -2,6 +2,7 @@ module Common
 
 using StaticArrays
 using StructArrays
+using Adapt
 
 # ==============================================================================
 # 1. ABSTRACT INTERFACES
@@ -101,6 +102,18 @@ mutable struct BallSystem{D,T,S}
         S = typeof(data)
         new{D,T,S}(data, zero(T), 0)
     end
+
+    function BallSystem(data::S, t::Number, iter::Int) where {S}
+        val_type = eltype(data.pos)
+        D_val = length(zero(val_type))
+        T_val = eltype(val_type)
+        new{D_val,T_val,S}(data, convert(T_val, t), iter)
+    end
+end
+
+function Adapt.adapt_structure(to, sys::BallSystem{D,T,S}) where {D,T,S}
+    data = Adapt.adapt(to, sys.data)
+    BallSystem(data, sys.t, sys.iter)
 end
 
 function Base.show(io::IO, sys::BallSystem{D,T,S}) where {D,T,S}

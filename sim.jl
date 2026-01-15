@@ -15,6 +15,19 @@ if "--mode" in ARGS && ("interactive" in ARGS || findfirst(==("interactive"), AR
     end
 end
 
+# Pre-load CUDA if requested via --backend cuda
+if "--backend" in ARGS
+    idx = findfirst(==("--backend"), ARGS)
+    if idx !== nothing && length(ARGS) >= idx + 1 && ARGS[idx+1] == "cuda"
+        try
+            using CUDA
+            println("🔌 CUDA loaded!")
+        catch e
+            @warn "CUDA requested but failed to load. Ensure 'CUDA' is installed in the active environment." exception = e
+        end
+    end
+end
+
 using BallSim
 # Pass command line args to your function
 BallSim.command_line_main()

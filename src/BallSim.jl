@@ -9,6 +9,8 @@ using ProgressMeter
 # Visualization & IO
 using CairoMakie
 using HDF5
+using Adapt
+using KernelAbstractions
 
 # Sub-modules
 include("Common.jl")
@@ -22,20 +24,46 @@ include("Config.jl")
 
 export Common, Scenarios, Shapes, Fields, Physics, SimIO, Vis, Config
 
+# Global registry for backends
+const BACKEND_REGISTRY = Dict{String,Any}("cpu" => Array)
+
+function register_backend(name::String, array_type)
+    BACKEND_REGISTRY[name] = array_type
+end
+
 # ==============================================================================
 # THE DRIVER
 # ==============================================================================
 
-function run_simulation(config_path::String)
-    println("⚙️ Loading Configuration: $config_path")
-    cfg = Config.load_config(config_path)
-    run_simulation(cfg)
+function get_backend_type(name::String)
+    if haskey(BACKEND_REGISTRY, name)
+        return BACKEND_REGISTRY[name]
+    else
+        if name == "cuda"
+            error(
+                "Backend 'cuda' not loaded. Please run `using CUDA` in your script to activate the GPU extension.",
+            )
+        end
+        error("Unknown backend: $name. Available: $(keys(BACKEND_REGISTRY))")
+    end
 end
 
-function run_simulation(cfg::Config.SimulationConfig)
+function run_simulation(config_path::String; backend_name = "cpu")
+    println("⚙️ Loading Configuration: $config_path")
+    cfg = Config.load_config(config_path)
+    run_simulation(cfg; backend_name = backend_name)
+end
+
+function run_simulation(cfg::Config.SimulationConfig; backend_name = "cpu")
     # 1. Setup Scenario (DYNAMIC NOW)
     scen = Config.create_scenario(cfg)
     sys = Common.setup_system(scen)
+
+    if backend_name != "cpu"
+        backend_type = get_backend_type(backend_name)
+        println("🔄 Moving system to $backend_name ($backend_type)...")
+        sys = Adapt.adapt(backend_type, sys)
+    end
 
     # 2. Build Physics from Config
     gravity = Config.create_gravity(cfg)
@@ -166,6 +194,8 @@ function command_line_main()
 
     # 2. Parse overrides
     overrides = Dict{Symbol,Any}()
+    backend_name = "cpu"
+
     i = 1
     while i <= length(args)
         arg = args[i]
@@ -190,6 +220,12 @@ function command_line_main()
             end
             overrides[:output_file] = args[i+1]
             i += 2
+        elseif arg == "--backend"
+            if i + 1 > length(args)
+                error("--backend requires an argument")
+            end
+            backend_name = args[i+1]
+            i += 2
         else
             println("Warning: Ignoring unknown argument '$arg'")
             i += 1
@@ -201,7 +237,7 @@ function command_line_main()
         cfg = Config.modify_config(cfg; overrides...)
     end
 
-    run_simulation(cfg)
+    run_simulation(cfg; backend_name = backend_name)
 end
 
 end

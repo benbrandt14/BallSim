@@ -15,6 +15,9 @@ end
 # --- ConvexPolygon ---
 
 struct ConvexPolygon <: Common.AbstractBoundary{2}
+    # TODO: This struct uses Vector which is not GPU-compatible.
+    # To support GPU, use StaticArrays (SVector) for vertices if N is small and fixed,
+    # or pass vertices as a separate buffer to the kernel.
     vertices::Vector{SVector{2,Float32}}
     normals::Vector{SVector{2,Float32}}
 end
