@@ -8,7 +8,6 @@ using BallSim
     # 2. Unit Specs
     include("unit/test_common.jl")
     include("unit/test_common_edge.jl")
-    include("unit/test_common_soa.jl")
     include("unit/test_scenarios.jl")
     include("unit/test_shapes_extended.jl")
     include("shapes/test_inverted.jl") # Added

@@ -478,7 +478,7 @@ function Common.detect_collision(b::Inverted{3,Circle3D}, p::SVector{3}, t)
         d = sqrt(d2)
         dist = b.inner.radius - d
 
-        if d < 1.0f-6
+        if d < 1e-6f0
             n = SVector(0.0f0, 0.0f0, 1.0f0)
         else
             n = -p / d

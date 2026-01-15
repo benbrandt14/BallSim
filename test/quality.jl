@@ -10,7 +10,6 @@ using Aqua
             ambiguities = false,
             stale_deps = (ignore = [:GLMakie],),
             persistent_tasks = false,
-            unbound_args = true,
         )
     end
 end
