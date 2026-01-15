@@ -125,6 +125,14 @@ function validate_boundary_params(type, params, dims)
         if params[:rx] <= 0 || params[:ry] <= 0
             error("Config Error: Ellipsoid radii must be positive.")
         end
+    elseif type == :Polygon
+        if !haskey(params, :vertices)
+            error("Config Error: Polygon requires 'vertices'.")
+        end
+    elseif type == :Rotating
+        if !haskey(params, :angular_velocity) || !haskey(params, :inner)
+            error("Config Error: Rotating requires 'angular_velocity' and 'inner'.")
+        end
     end
 end
 
@@ -139,6 +147,10 @@ function validate_gravity_params(type, params, dims)
     elseif type == :Central
         if !haskey(params, :strength)
             error("Config Error: Central gravity requires 'strength'.")
+        end
+    elseif type == :Vortex
+        if !haskey(params, :strength)
+            error("Config Error: Vortex requires 'strength'.")
         end
     end
 end
@@ -200,7 +212,7 @@ function load_config(path::String)
     grav = phys[:gravity]
     grav_type = validate_choice(
         Symbol(get(grav, :type, "Zero")),
-        [:Uniform, :Central, :Zero],
+        [:Uniform, :Central, :Zero, :Vortex],
         "gravity.type",
     )
     grav_params = get(grav, :params, Dict())
@@ -213,7 +225,7 @@ function load_config(path::String)
     bound = phys[:boundary]
     bound_type = validate_choice(
         Symbol(get(bound, :type, "Circle")),
-        [:Circle, :Box, :Ellipsoid, :InvertedCircle],
+        [:Circle, :Box, :Ellipsoid, :InvertedCircle, :Polygon, :Rotating],
         "boundary.type",
     )
     bound_params = get(bound, :params, Dict())
@@ -285,6 +297,9 @@ function create_scenario(cfg::SimulationConfig)
                 mass_max = Float32(m_max),
             )
         end
+    elseif t == :Tumbler
+        N = get(p, :N, 1000)
+        return Scenarios.TumblerScenario(N = Int(N))
     else
         error("Unknown Scenario Type: $t")
     end
@@ -300,33 +315,45 @@ function create_solver(cfg::SimulationConfig)
     end
 end
 
-function create_boundary(cfg::SimulationConfig)
-    t = cfg.boundary_type
-    p = cfg.boundary_params
-
-    if cfg.dimensions == 3
-        if t == :Circle || t == :Circle3D
-            return Shapes.Circle3D(Float32(p[:radius]))
-        elseif t == :Box
-            return Shapes.Box3D(Float32(p[:width]), Float32(p[:height]), Float32(p[:depth]))
-        elseif t == :InvertedCircle
-            return Shapes.Inverted(Shapes.Circle3D(Float32(p[:radius])))
+function create_boundary_from_dict(type::Symbol, params::AbstractDict, dims::Int)
+    if dims == 3
+        if type == :Circle || type == :Circle3D
+            return Shapes.Circle3D(Float32(params[:radius]))
+        elseif type == :Box
+            return Shapes.Box3D(Float32(params[:width]), Float32(params[:height]), Float32(params[:depth]))
+        elseif type == :InvertedCircle
+            return Shapes.Inverted(Shapes.Circle3D(Float32(params[:radius])))
         else
-            error("Boundary '$t' not supported in 3D yet.")
+            error("Boundary '$type' not supported in 3D yet.")
         end
     else # 2D
-        if t == :Circle
-            return Shapes.Circle(Float32(p[:radius]))
-        elseif t == :Box
-            return Shapes.Box(Float32(p[:width]), Float32(p[:height]))
-        elseif t == :Ellipsoid
-            return Shapes.Ellipsoid(Float32(p[:rx]), Float32(p[:ry]))
-        elseif t == :InvertedCircle
-            return Shapes.Inverted(Shapes.Circle(Float32(p[:radius])))
+        if type == :Circle
+            return Shapes.Circle(Float32(params[:radius]))
+        elseif type == :Box
+            return Shapes.Box(Float32(params[:width]), Float32(params[:height]))
+        elseif type == :Ellipsoid
+            return Shapes.Ellipsoid(Float32(params[:rx]), Float32(params[:ry]))
+        elseif type == :InvertedCircle
+            return Shapes.Inverted(Shapes.Circle(Float32(params[:radius])))
+        elseif type == :Polygon
+            raw_verts = params[:vertices]
+            verts = [SVector{2,Float32}(Float32(v[1]), Float32(v[2])) for v in raw_verts]
+            return Shapes.ConvexPolygon(verts)
+        elseif type == :Rotating
+            w = Float32(params[:angular_velocity])
+            inner_raw = params[:inner]
+            inner_type = Symbol(inner_raw[:type])
+            inner_params = inner_raw[:params]
+            inner_b = create_boundary_from_dict(inner_type, inner_params, dims)
+            return Shapes.Rotating(inner_b, w)
         else
-            error("Unknown Boundary Type: $t")
+            error("Unknown Boundary Type: $type")
         end
     end
+end
+
+function create_boundary(cfg::SimulationConfig)
+    return create_boundary_from_dict(cfg.boundary_type, cfg.boundary_params, cfg.dimensions)
 end
 
 function create_gravity(cfg::SimulationConfig)
@@ -351,6 +378,18 @@ function create_gravity(cfg::SimulationConfig)
             pos,
             Float32(p[:strength]),
             mode = Symbol(get(p, :mode, "attractor")),
+        )
+    elseif t == :Vortex
+        c = get(p, :center, zeros(Float32, cfg.dimensions))
+        if cfg.dimensions == 2
+            pos = SVector(Float32(c[1]), Float32(c[2]))
+        elseif cfg.dimensions == 3
+            pos = SVector(Float32(c[1]), Float32(c[2]), Float32(c[3]))
+        end
+        return Fields.VortexField(
+            pos,
+            Float32(p[:strength]),
+            cutoff = Float32(get(p, :cutoff, 0.1)),
         )
     elseif t == :Zero
         if cfg.dimensions == 2
