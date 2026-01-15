@@ -3,6 +3,10 @@
 ## Project Context
 **BallSim.jl** is a high-performance, multi-threaded 2D and 3D physics engine written in Julia. It uses a Structure-of-Arrays (SoA) data layout and decoupled rendering.
 
+## Roadmap
+Refer to `ROADMAP.md` for the strategic direction of the project, including planned features for Physics, HPC, and Visualization.
+*   **Keep it Updated:** As you implement features or discover new requirements, update `ROADMAP.md` to reflect the current state and future goals.
+
 ## Coding Standards
 
 ### Julia Style
