@@ -122,7 +122,7 @@ end
 Checks for collision and returns (collided, dist, normal).
 - collided: Bool, true if penetration depth > 0
 - dist: Float32, penetration depth (positive means collision)
-- normal: SVector, direction to resolve collision (points out of obstacle)
+- normal: SVector, direction to resolve collision (points into the obstacle / forbidden region)
 
 Default implementation calls `sdf` and `normal`.
 """
