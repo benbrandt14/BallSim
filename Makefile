@@ -1,6 +1,6 @@
 # BallSim Makefile
 
-.PHONY: run run-render run-export run-interactive test lint format setup clean
+.PHONY: update run run-render run-export run-interactive test lint format setup clean
 
 # Default runs render (headless)
 run: run-render
@@ -14,6 +14,9 @@ run-export:
 run-interactive:
 	julia --project=. -e 'using Pkg; Pkg.add("GLMakie"); using GLMakie'
 	julia --project=. sim.jl config.yaml --mode interactive
+
+update:
+	julia --project=. -e 'using Pkg; Pkg.resolve()'
 
 test:
 	julia --project=. -e 'using Pkg; Pkg.test()'
