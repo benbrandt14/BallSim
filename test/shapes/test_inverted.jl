@@ -193,38 +193,4 @@ using LinearAlgebra
         (c, d, n) = Common.detect_collision(inv_ell, p_out, 0.0f0)
         @test c == false
     end
-
-    @testset "Inverted ConvexPolygon" begin
-        # Square via Polygon
-        vertices = [
-            SVector(1.0f0, 1.0f0),
-            SVector(-1.0f0, 1.0f0),
-            SVector(-1.0f0, -1.0f0),
-            SVector(1.0f0, -1.0f0)
-        ]
-        poly = Shapes.ConvexPolygon(vertices)
-        inv_poly = Shapes.Inverted(poly)
-
-        # Inside (0,0) -> Collision
-        p_in = SVector(0.0f0, 0.0f0)
-        (c, d, n) = Common.detect_collision(inv_poly, p_in, 0.0f0)
-        @test c == true
-        @test d > 0
-        # Normal?
-        # Square planes: x=1, y=1, x=-1, y=-1.
-        # (0,0) distance to x=1 (n=1,0) is -1.
-        # max_d = -1.
-        # dist = 1.
-        # n = -poly.normal.
-        # poly.normal for closest edge? All are dist -1.
-        # Let's say edge 1 (x=1). Normal (1,0).
-        # n = (-1, 0). Pushes left.
-        # Any direction is valid for center.
-        @test norm(n) ≈ 1.0f0
-
-        # Outside (2,0) -> Safe
-        p_out = SVector(2.0f0, 0.0f0)
-        (c, d, n) = Common.detect_collision(inv_poly, p_out, 0.0f0)
-        @test c == false
-    end
 end

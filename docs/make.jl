@@ -1,7 +1,7 @@
 using BallSim
 using Documenter
 
-DocMeta.setdocmeta!(BallSim, :DocTestSetup, :(using BallSim, StaticArrays); recursive = true)
+DocMeta.setdocmeta!(BallSim, :DocTestSetup, :(using BallSim); recursive = true)
 
 makedocs(;
     modules = [BallSim],
