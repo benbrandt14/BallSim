@@ -4,9 +4,11 @@ authors = ["Ben Brandt <benbrandt14@gmail.com>"]
 version = "0.0.1"
 
 [deps]
+Adapt = "79e6a3ab-5dfb-504d-930d-738a2a938a0e"
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
+KernelAbstractions = "63c18a36-062a-441e-b654-da1e3ab1ce7c"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
@@ -18,27 +20,32 @@ WriteVTK = "64499a7a-5c06-52f2-abe2-ccb03c286192"
 YAML = "ddb6d928-2868-570f-bddf-ab3f9cf99eb6"
 
 [weakdeps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 
 [extensions]
+BallSimCUDAExt = "CUDA"
 BallSimInteractiveExt = "GLMakie"
 
 [compat]
+Adapt = "4.4"
 Aqua = "0.8"
+CUDA = "5.0"
 CairoMakie = "0.15"
 Dates = "1.0"
 GLMakie = "0.13"
 HDF5 = "0.17"
+KernelAbstractions = "0.9"
 JET = ">= 0.9"
 JuliaFormatter = "2.2"
 LinearAlgebra = "1.0"
 Printf = "1.0"
 ProgressMeter = "1.0"
 Random = "1.0"
+SHA = "0.7"
 StaticArrays = "1.9"
 Statistics = "1.0"
 StructArrays = "0.7"
-SHA = "0.7"
 Test = "1.0"
 WriteVTK = "1.21"
 YAML = "0.4"
@@ -48,8 +55,8 @@ julia = "1.10"
 Aqua = "4c88cf16-eb10-579e-8560-4a9242c79595"
 JET = "c3a54625-cd67-489e-a8e7-0a5a0ff4e31b"
 JuliaFormatter = "98e50ef6-434e-11e9-1051-2b60c6c9e899"
-Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 SHA = "ea8e919c-243c-51af-8825-aaa63cd721ce"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
 test = ["Aqua", "Test", "SHA"]

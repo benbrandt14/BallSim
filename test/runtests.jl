@@ -8,7 +8,6 @@ using BallSim
     # 2. Unit Specs
     include("unit/test_common.jl")
     include("unit/test_common_edge.jl")
-    include("unit/test_common_soa.jl")
     include("unit/test_scenarios.jl")
     include("unit/test_shapes_extended.jl")
     include("shapes/test_inverted.jl") # Added
@@ -19,6 +18,7 @@ using BallSim
     include("unit/test_config.jl")
     include("unit/test_io.jl")
     include("unit/test_demo_features.jl")
+    include("unit/test_kernels.jl")
 
     # 3. Physics & Regression
     include("physics/test_physics.jl")

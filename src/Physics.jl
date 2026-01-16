@@ -3,6 +3,7 @@ module Physics
 using ..Common
 using StaticArrays
 using LinearAlgebra
+using KernelAbstractions
 
 # ==============================================================================
 # SOLVERS
@@ -17,6 +18,61 @@ end
 # ==============================================================================
 # KERNELS
 # ==============================================================================
+
+@kernel function physics_step_kernel(
+    pos,
+    vel,
+    mass,
+    active,
+    collisions,
+    dt_sub,
+    restitution_term,
+    boundary,
+    gravity_func,
+    t_start,
+    substeps,
+)
+    i = @index(Global)
+    if active[i]
+        p = pos[i]
+        v = vel[i]
+        m = mass[i]
+        inv_m = 1.0f0 / m
+        t_local = t_start
+        epsilon = 0.00001f0
+
+        for _ = 1:substeps
+            # 1. Integration
+            f = gravity_func(p, v, m, t_local)
+            a = f * inv_m
+            v_new = v + a * dt_sub
+            p_new = p + v_new * dt_sub
+
+            # 2. Collision Detection
+            collided, dist, n = Common.detect_collision(boundary, p_new, t_local)
+
+            if collided
+                p_new = p_new - n * (dist + epsilon)
+
+                v_normal = dot(v_new, n)
+                if v_normal > 0
+                    v_new = v_new - restitution_term * v_normal * n
+                    # Count collision
+                    collisions[i] += 1
+                end
+            end
+
+            # Update local state for next substep
+            p = p_new
+            v = v_new
+            t_local += dt_sub
+        end
+
+        # 3. Write Back (Once per frame)
+        pos[i] = p
+        vel[i] = v
+    end
+end
 
 """
     step!(sys, solver, boundary, gravity_func)
@@ -67,49 +123,25 @@ function step!(
 ) where {D,T,S,G}
 
     dt_sub = solver.dt / solver.substeps
-    epsilon = 0.00001f0
     restitution_term = 1.0f0 + solver.restitution
+    backend = KernelAbstractions.get_backend(sys.data.pos)
 
-    Threads.@threads for i = 1:length(sys.data.pos)
-        @inbounds if sys.data.active[i]
-            p = sys.data.pos[i]
-            v = sys.data.vel[i]
-            m = sys.data.mass[i]
-            inv_m = 1.0f0 / m
-            t_local = sys.t
-
-            for _ = 1:solver.substeps
-                # 1. Integration
-                f = gravity_func(p, v, m, t_local)
-                a = f * inv_m
-                v_new = v + a * dt_sub
-                p_new = p + v_new * dt_sub
-
-                # 2. Collision Detection
-                collided, dist, n = Common.detect_collision(boundary, p_new, t_local)
-
-                if collided
-                    p_new = p_new - n * (dist + epsilon)
-
-                    v_normal = dot(v_new, n)
-                    if v_normal > 0
-                        v_new = v_new - restitution_term * v_normal * n
-                        # Count collision
-                        @inbounds sys.data.collisions[i] += 1
-                    end
-                end
-
-                # Update local state for next substep
-                p = p_new
-                v = v_new
-                t_local += dt_sub
-            end
-
-            # 3. Write Back (Once per frame)
-            @inbounds sys.data.pos[i] = p
-            @inbounds sys.data.vel[i] = v
-        end
-    end
+    kernel = physics_step_kernel(backend)
+    kernel(
+        sys.data.pos,
+        sys.data.vel,
+        sys.data.mass,
+        sys.data.active,
+        sys.data.collisions,
+        dt_sub,
+        restitution_term,
+        boundary,
+        gravity_func,
+        sys.t,
+        solver.substeps;
+        ndrange = length(sys.data.pos),
+    )
+    KernelAbstractions.synchronize(backend)
 
     sys.t += solver.dt
     sys.iter += 1

@@ -15,6 +15,9 @@ end
 # --- ConvexPolygon ---
 
 struct ConvexPolygon <: Common.AbstractBoundary{2}
+    # TODO: This struct uses Vector which is not GPU-compatible.
+    # To support GPU, use StaticArrays (SVector) for vertices if N is small and fixed,
+    # or pass vertices as a separate buffer to the kernel.
     vertices::Vector{SVector{2,Float32}}
     normals::Vector{SVector{2,Float32}}
 end
@@ -475,7 +478,7 @@ function Common.detect_collision(b::Inverted{3,Circle3D}, p::SVector{3}, t)
         d = sqrt(d2)
         dist = b.inner.radius - d
 
-        if d < 1.0f-6
+        if d < 1e-6f0
             n = SVector(0.0f0, 0.0f0, 1.0f0)
         else
             n = -p / d
