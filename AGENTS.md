@@ -55,6 +55,13 @@ julia --project=. test/debug_agent.jl
 ```
 This runs a minimal simulation step and prints the output to stdout.
 
+### Validating Configuration
+If you have modified `config.yaml` and want to verify it before running the simulation:
+```bash
+julia --project=. tools/check_config.jl [path/to/config.yaml]
+```
+This tool will validate the configuration schema and parameter constraints, providing detailed error messages if validation fails.
+
 ### Documentation & Doctests
 We use `Documenter.jl` for documentation and `jldoctest` to ensure examples in docstrings stay up-to-date.
 
