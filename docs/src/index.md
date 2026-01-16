@@ -115,7 +115,15 @@ nothing # hide
 
 ### 1. Command Line
 
-Run the simulation using the default `config.yaml`:
+You can use the provided `Makefile` for convenience:
+
+```bash
+make run-render       # Runs headless simulation
+make run-interactive  # Runs interactive simulation with GLMakie
+make run-export       # Runs simulation and exports to HDF5
+```
+
+Or run directly with Julia:
 
 ```bash
 julia --project=. sim.jl
@@ -167,9 +175,37 @@ output:
   fps: 60
   filename: sandbox/simulation
   projection: xy
+  visualization:
+    mode: depth
+    aggregation: max
 ```
 
-### 2. The Darkroom (High-Res Visualization)
+### 2. GPU Support
+
+BallSim supports running physics on GPUs (CUDA, Metal, OneAPI) via `KernelAbstractions.jl`.
+
+#### Requirements
+*   A compatible GPU.
+*   The corresponding Julia package installed in your environment (e.g., `CUDA.jl` for NVIDIA GPUs).
+
+#### Running on GPU
+
+Use the `--backend` flag to specify the target backend.
+
+```bash
+# Run on NVIDIA GPU (requires CUDA.jl)
+julia --project=. sim.jl config.yaml --backend cuda
+
+# Run on CPU (Default)
+julia --project=. sim.jl config.yaml --backend cpu
+```
+
+**Note:** Since `CUDA.jl` is a heavy dependency, it is not included in the project's default dependencies. You must install it in your environment:
+```bash
+julia -e 'using Pkg; Pkg.add("CUDA")'
+```
+
+### 3. The Darkroom (High-Res Visualization)
 
 Turn raw HDF5 data into art using the standalone renderer tool.
 
@@ -182,7 +218,7 @@ julia --project=. tools/render_frame.jl sandbox/data_123456.h5 10
 * **Output:** A 4K (3840x2160) PNG with logarithmic tone mapping.
 * **Performance:** Multi-threaded accumulation buffer; renders 1M particles in milliseconds.
 
-### 3. ParaView Export (VTK)
+### 4. ParaView Export (VTK)
 
 Export simulations directly to `.vtu` (Unstructured Grid) or `.vtp` (PolyData) formats for analysis in ParaView.
 
