@@ -35,8 +35,8 @@ Inspired by [the work of Alexander Gustafsson](https://www.youtube.com/watch?v=V
 ## Installation
 
 ```bash
-git clone https://github.com/benbrandt14/BallSim
-cd BallSim
+git clone https://github.com/benbrandt14/BallSim.jl
+cd BallSim.jl
 # Option 1: Quick Start (Installs Julia if needed, instantiates, and tests)
 ./setup.sh
 
