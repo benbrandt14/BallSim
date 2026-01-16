@@ -156,8 +156,26 @@ function Common.detect_collision(b::Rotating{2}, p::SVector{2}, t)
 end
 
 struct Box <: Common.AbstractBoundary{2}
-    width::Float32
-    height::Float32
+    half_width::Float32
+    half_height::Float32
+
+    # Inner constructor to handle initialization logic
+    # This replaces the default constructor, so Box(10, 10) becomes half_width=5
+    function Box(width, height)
+        new(Float32(width) / 2, Float32(height) / 2)
+    end
+    # We might need a way to create Box from raw halves if needed, but for now
+    # all external API expects width/height.
+end
+
+function Base.getproperty(b::Box, s::Symbol)
+    if s === :width
+        return getfield(b, :half_width) * 2
+    elseif s === :height
+        return getfield(b, :half_height) * 2
+    else
+        return getfield(b, s)
+    end
 end
 
 struct Ellipsoid <: Common.AbstractBoundary{2}
@@ -170,9 +188,25 @@ struct Circle3D <: Common.AbstractBoundary{3}
 end
 
 struct Box3D <: Common.AbstractBoundary{3}
-    width::Float32
-    height::Float32
-    depth::Float32
+    half_width::Float32
+    half_height::Float32
+    half_depth::Float32
+
+    function Box3D(width, height, depth)
+        new(Float32(width) / 2, Float32(height) / 2, Float32(depth) / 2)
+    end
+end
+
+function Base.getproperty(b::Box3D, s::Symbol)
+    if s === :width
+        return getfield(b, :half_width) * 2
+    elseif s === :height
+        return getfield(b, :half_height) * 2
+    elseif s === :depth
+        return getfield(b, :half_depth) * 2
+    else
+        return getfield(b, s)
+    end
 end
 
 # ==============================================================================
@@ -243,7 +277,7 @@ end
 
 # --- Box ---
 function Common.sdf(b::Box, p::SVector{2}, t)
-    d = abs.(p) .- SVector(b.width/2, b.height/2)
+    d = abs.(p) .- SVector(b.half_width, b.half_height)
     return norm(max.(d, 0.0f0)) + min(maximum(d), 0.0f0)
 end
 
@@ -251,7 +285,7 @@ function Common.normal(b::Box, p::SVector{2}, t)
     # Analytical Gradient
     # Replaces previous numerical gradient which had a syntax error (1e-4f0) and was slow.
 
-    w, h = b.width/2, b.height/2
+    w, h = b.half_width, b.half_height
     d = abs.(p) .- SVector(w, h)
 
     # Check max(d, 0) for positive components (outside box in that axis)
@@ -279,7 +313,7 @@ function Common.normal(b::Box, p::SVector{2}, t)
 end
 
 function Common.detect_collision(b::Box3D, p::SVector{3}, t)
-    w, h, dp = b.width/2, b.height/2, b.depth/2
+    w, h, dp = b.half_width, b.half_height, b.half_depth
     d = abs.(p) .- SVector(w, h, dp)
 
     d_max_x = max(d[1], 0.0f0)
@@ -305,7 +339,7 @@ end
 
 function Common.detect_collision(b::Box, p::SVector{2}, t)
     # Optimization: Calculate d once for both distance and normal
-    w, h = b.width/2, b.height/2
+    w, h = b.half_width, b.half_height
     d = abs.(p) .- SVector(w, h)
 
     d_max_x = max(d[1], 0.0f0)
@@ -400,12 +434,12 @@ julia> Common.sdf(b, SVector(2.0f0, 0.0f0, 0.0f0), 0.0f0)
 ```
 """
 function Common.sdf(b::Box3D, p::SVector{3}, t)
-    d = abs.(p) .- SVector(b.width/2, b.height/2, b.depth/2)
+    d = abs.(p) .- SVector(b.half_width, b.half_height, b.half_depth)
     return norm(max.(d, 0.0f0)) + min(maximum(d), 0.0f0)
 end
 
 function Common.normal(b::Box3D, p::SVector{3}, t)
-    w, h, dp = b.width/2, b.height/2, b.depth/2
+    w, h, dp = b.half_width, b.half_height, b.half_depth
     d = abs.(p) .- SVector(w, h, dp)
 
     d_max_x = max(d[1], 0.0f0)
